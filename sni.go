@@ -57,6 +57,8 @@ func main() {
 	flag.Parse()
 
 	ips := getSNIIP()
+	lastOKIP := getLastOkIP()
+	ips = append(lastOKIP, ips...)
 
 	jobs := make(chan string, config.Concurrency)
 	done := make(chan bool, config.Concurrency)
