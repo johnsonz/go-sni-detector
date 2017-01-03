@@ -81,6 +81,7 @@ func main() {
 	ipResults := getLastOkIP()
 	writeIP2File(ipResults, sniResultFileName)
 	fmt.Printf("\ntime: %ds, ok ip count: %d\n\n", cost, len(ipResults))
+	fmt.Scanln()
 }
 
 //Load cacert.pem
@@ -156,9 +157,9 @@ func parseConfig() {
 
 //Create files if they donnot exist, or truncate them.
 func createFile() {
-	if !isFileExist(sniIPFileName) {
-		_, err := os.Create(sniIPFileName)
-		checkErr(fmt.Sprintf("create file %s error: ", sniIPFileName), err, Error)
+	if !isFileExist(sniResultFileName) {
+		_, err := os.Create(sniResultFileName)
+		checkErr(fmt.Sprintf("create file %s error: ", sniResultFileName), err, Error)
 	}
 }
 
