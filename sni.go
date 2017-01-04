@@ -28,6 +28,7 @@ type SNI struct {
 const (
 	sniIPFileName     string = "sniip.txt"
 	sniResultFileName string = "sniip_output.txt"
+	sniJSONFileName   string = "ip.txt"
 	configFileName    string = "sni.json"
 	certFileName      string = "cacert.pem"
 )
@@ -80,9 +81,17 @@ func main() {
 	}
 	t1 := time.Now()
 	cost := int(t1.Sub(t0).Seconds())
-	ipResults := getLastOkIP()
-	writeIP2File(ipResults, sniResultFileName)
-	fmt.Printf("\ntime: %ds, ok ip count: %d\n\n", cost, len(ipResults))
+	iplist := getLastOkIP()
+	ipstr := strings.Join(iplist, "\n")
+	writeIP2File(ipstr, sniResultFileName)
+	jsonip := strings.Join(iplist, "|")
+	jsonip += "\n\n\n"
+	jsonip += `"`
+	jsonip += strings.Join(iplist, `","`)
+	jsonip += `"`
+	writeIP2File(jsonip, sniJSONFileName)
+
+	fmt.Printf("\ntime: %ds, ok ip count: %d\n\n", cost, len(iplist))
 	fmt.Scanln()
 }
 
@@ -162,6 +171,10 @@ func createFile() {
 	if !isFileExist(sniResultFileName) {
 		_, err := os.Create(sniResultFileName)
 		checkErr(fmt.Sprintf("create file %s error: ", sniResultFileName), err, Error)
+	}
+	if !isFileExist(sniJSONFileName) {
+		_, err := os.Create(sniJSONFileName)
+		checkErr(fmt.Sprintf("create file %s error: ", sniJSONFileName), err, Error)
 	}
 }
 
@@ -316,9 +329,9 @@ func appendIP2File(ip, filename string) {
 }
 
 //write ip to related file
-func writeIP2File(ips []string, filename string) {
+func writeIP2File(ips string, filename string) {
 	err := os.Truncate(filename, 0)
 	checkErr(fmt.Sprintf("truncate file %s error: ", filename), err, Error)
-	err = ioutil.WriteFile(filename, []byte(strings.Join(ips, "\n")), 0755)
+	err = ioutil.WriteFile(filename, []byte(ips), 0755)
 	checkErr(fmt.Sprintf("write ip to file %s error: ", filename), err, Error)
 }
