@@ -4,7 +4,9 @@
 ============
 
 ## 说明
-用于扫描SNI服务器，请将待测试的ip段放到sniip.txt文件，支持以下ip格式：
+用于扫描SNI服务器，sniip_output.txt中的延迟值为配置中指定的各server_name的延迟的平均值。
+
+请将待测试的ip段放到sniip.txt文件，支持以下ip格式：
 
 1. xxx.xxx.xxx.xxx
 2. xxx.xxx.xxx.xxx/xx
