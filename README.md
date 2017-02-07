@@ -23,4 +23,4 @@ gox https://github.com/mitchellh/gox
 ## 配置说明
 `"concurrency":1000` 并发线程数，可根据自己的硬件配置调整
 
-`server_name` 用于测试SNI服务器的域名
+`"server_name"` 用于测试SNI服务器的域名
