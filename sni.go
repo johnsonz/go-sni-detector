@@ -60,7 +60,8 @@ func main() {
 	ips := getSNIIP()
 	lastOKIP := getLastOkIP()
 	ips = append(lastOKIP, ips...)
-
+	err := os.Truncate(sniResultFileName, 0)
+	checkErr(fmt.Sprintf("truncate file %s error: ", sniResultFileName), err, Error)
 	jobs := make(chan string, config.Concurrency)
 	done := make(chan bool, config.Concurrency)
 
