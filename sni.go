@@ -156,6 +156,7 @@ Next:
 		}
 		return
 	}
+	checkErr(fmt.Sprintf("%s, it is a valid sni ip, already recorded.", ip), errors.New(""), Info)
 	appendIP2File(ip, sniResultFileName)
 }
 
