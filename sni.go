@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +24,12 @@ type SNI struct {
 	Timeout          int `json:"timeout"`
 	HandshakeTimeout int
 	ServerName       []string `json:"server_name"`
+}
+
+//IP struct
+type IP struct {
+	Address string
+	Delay   int
 }
 
 const (
@@ -58,7 +65,10 @@ func main() {
 	flag.Parse()
 
 	ips := getSNIIP()
-	lastOKIP := getLastOkIP()
+	var lastOKIP []string
+	for _, ip := range getLastOkIP() {
+		lastOKIP = append(lastOKIP, ip.Address)
+	}
 	ips = append(lastOKIP, ips...)
 	err := os.Truncate(sniResultFileName, 0)
 	checkErr(fmt.Sprintf("truncate file %s error: ", sniResultFileName), err, Error)
@@ -82,17 +92,22 @@ func main() {
 	}
 	t1 := time.Now()
 	cost := int(t1.Sub(t0).Seconds())
-	iplist := getLastOkIP()
-	ipstr := strings.Join(iplist, "\n")
+	var rawiplist, jsoniplist []string
+	for _, ip := range getLastOkIP() {
+		rawiplist = append(rawiplist, fmt.Sprintf("%s %dms", ip.Address, ip.Delay))
+		jsoniplist = append(jsoniplist, ip.Address)
+	}
+
+	ipstr := strings.Join(rawiplist, "\n")
 	writeIP2File(ipstr, sniResultFileName)
-	jsonip := strings.Join(iplist, "|")
+	jsonip := strings.Join(jsoniplist, "|")
 	jsonip += "\n\n\n"
 	jsonip += `"`
-	jsonip += strings.Join(iplist, `","`)
+	jsonip += strings.Join(jsoniplist, `","`)
 	jsonip += `"`
 	writeIP2File(jsonip, sniJSONFileName)
 
-	fmt.Printf("\ntime: %ds, ok ip count: %d\n\n", cost, len(iplist))
+	fmt.Printf("\ntime: %ds, ok ip count: %d\n\n", cost, len(rawiplist))
 	fmt.Scanln()
 }
 
@@ -109,13 +124,14 @@ func checkIP(ip string, done chan bool) {
 	defer func() {
 		<-done
 	}()
+	delays := make([]int, len(config.ServerName))
 	dialer = net.Dialer{
 		Timeout:   time.Millisecond * time.Duration(config.Timeout),
 		KeepAlive: 0,
 		DualStack: false,
 	}
 Next:
-	for _, server := range config.ServerName {
+	for i, server := range config.ServerName {
 		conn, err := dialer.Dial("tcp", net.JoinHostPort(ip, "443"))
 		if err != nil {
 			checkErr(fmt.Sprintf("%s dial error: ", ip), err, Debug)
@@ -129,7 +145,7 @@ Next:
 			ServerName:         server,
 		}
 
-		//t0 := time.Now()
+		t0 := time.Now()
 		tlsClient := tls.Client(conn, tlsConfig)
 		tlsClient.SetDeadline(time.Now().Add(time.Millisecond * time.Duration(config.HandshakeTimeout)))
 		err = tlsClient.Handshake()
@@ -139,8 +155,8 @@ Next:
 			return
 		}
 		defer tlsClient.Close()
-		//t1 := time.Now()
-
+		t1 := time.Now()
+		delays[i] = int(t1.Sub(t0).Seconds() * 1000)
 		if tlsClient.ConnectionState().PeerCertificates == nil {
 			checkErr(fmt.Sprintf("%s peer certificates error: ", ip), errors.New("peer certificates is nil"), Debug)
 			return
@@ -156,8 +172,14 @@ Next:
 		}
 		return
 	}
-	checkErr(fmt.Sprintf("%s, it is a valid sni ip, already recorded.", ip), errors.New(""), Info)
-	appendIP2File(ip, sniResultFileName)
+	sum := 0
+	for _, d := range delays {
+		sum += d
+	}
+	delay := sum / len(delays)
+	checkErr(fmt.Sprintf("%s %dms, sni ip, recorded.", ip, delay), errors.New(""), Info)
+
+	appendIP2File(IP{Address: ip, Delay: delay}, sniResultFileName)
 }
 
 //Parse config file
@@ -300,16 +322,23 @@ func inc(ip net.IP) {
 }
 
 //get last ip
-func getLastOkIP() []string {
-	m := make(map[string]string)
-	var ips []string
+func getLastOkIP() []IP {
+	m := make(map[string]IP)
+	var checkedip IP
+	var ips []IP
 	if isFileExist(sniResultFileName) {
 		bytes, err := ioutil.ReadFile(sniResultFileName)
 		checkErr(fmt.Sprintf("read file %s error: ", sniResultFileName), err, Error)
 		lines := strings.Split(string(bytes), "\n")
 		for _, line := range lines {
-			if len(line) > 6 && len(line) < 16 {
-				m[line] = line
+			ipinfo := strings.Split(line, " ")
+			if len(ipinfo) == 2 {
+				checkedip.Address = ipinfo[0]
+				delay, err := strconv.Atoi(ipinfo[1][:len(ipinfo[1])-2])
+				checkErr("delay conversion failed: ", err, Warning)
+				checkedip.Delay = delay
+
+				m[ipinfo[0]] = checkedip
 			}
 		}
 	}
@@ -320,12 +349,12 @@ func getLastOkIP() []string {
 }
 
 //append ip to related file
-func appendIP2File(ip, filename string) {
+func appendIP2File(ip IP, filename string) {
 	f, err := os.OpenFile(filename, os.O_APPEND, os.ModeAppend)
 	checkErr(fmt.Sprintf("open file %s error: ", filename), err, Error)
 	defer f.Close()
 
-	_, err = f.WriteString(fmt.Sprintf("%s\n", ip))
+	_, err = f.WriteString(fmt.Sprintf("%s %dms\n", ip.Address, ip.Delay))
 	checkErr(fmt.Sprintf("append ip to file %s error: ", filename), err, Error)
 	f.Close()
 }
