@@ -4,5 +4,6 @@
     "server_name":[
         "www.google.com",
         "www.bing.com"
-    ]
+    ],
+    "sort_by_delay":true
 }
