@@ -15,10 +15,10 @@
 5. xxx.-xxx.
 
 ## 下载地址
-https://github.com/johnsonz/go-checksni/releases
+[Latest release](https://github.com/johnsonz/go-checksni/releases)
 
 ## 编译
-gox https://github.com/mitchellh/gox
+[gox](https://github.com/mitchellh/gox)
 
 ## 配置说明
 `"concurrency":1000` 并发线程数，可根据自己的硬件配置调整
