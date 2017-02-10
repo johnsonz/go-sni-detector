@@ -1,6 +1,6 @@
-# go-checksni
+# go-sni-detector
 
-[![Build Status](https://travis-ci.org/johnsonz/go-checksni.svg?branch=master)](https://travis-ci.org/johnsonz/go-checksni) [![GPLv3 License](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/johnsonz/go-checksni/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/johnsonz/go-sni-detector.svg?branch=master)](https://travis-ci.org/johnsonz/go-sni-detector) [![GPLv3 License](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/johnsonz/go-sni-detector/blob/master/LICENSE)
 ============
 
 ## 说明
@@ -15,7 +15,7 @@
 5. xxx.-xxx.
 
 ## 下载地址
-[Latest release](https://github.com/johnsonz/go-checksni/releases)
+[Latest release](https://github.com/johnsonz/go-sni-detector/releases)
 
 ## 编译
 [gox](https://github.com/mitchellh/gox)
