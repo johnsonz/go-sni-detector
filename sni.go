@@ -22,6 +22,7 @@ type SNI struct {
 	Concurrency      int `json:"concurrency"`
 	Timeout          int `json:"timeout"`
 	HandshakeTimeout int
+	Delay            int      `json:"delay"`
 	ServerName       []string `json:"server_name"`
 	SortByDelay      bool     `json:"sort_by_delay"`
 }
@@ -93,7 +94,9 @@ func main() {
 	}
 	for _, ip := range okIPs {
 		rawiplist = append(rawiplist, fmt.Sprintf("%s %dms", ip.Address, ip.Delay))
-		jsoniplist = append(jsoniplist, ip.Address)
+		if ip.Delay <= config.Delay {
+			jsoniplist = append(jsoniplist, ip.Address)
+		}
 	}
 
 	ipstr := strings.Join(rawiplist, "\n")
@@ -105,7 +108,7 @@ func main() {
 	jsonip += `"`
 	writeIP2File(jsonip, sniJSONFileName)
 
-	fmt.Printf("\ntime: %ds, ok ip count: %d\n\n", cost, len(rawiplist))
+	fmt.Printf("\ntime: %ds, ok ip count: %d, matched ip with delay(%dms) count: %d\n\n", cost, len(rawiplist), config.Delay, len(jsoniplist))
 	fmt.Scanln()
 }
 

@@ -1,6 +1,7 @@
 {
     "concurrency":1000,
     "timeout":8000,
+    "delay":1200,
     "server_name":[
         "www.google.com",
         "www.bing.com"
