@@ -93,7 +93,7 @@ func main() {
 		sort.Sort(ByDelay{IPs(okIPs)})
 	}
 	for _, ip := range okIPs {
-		rawiplist = append(rawiplist, fmt.Sprintf("%s %dms", ip.Address, ip.Delay))
+		rawiplist = append(rawiplist, fmt.Sprintf("%s %dms %s", ip.Address, ip.Delay, ip.HostName))
 		if ip.Delay <= config.Delay {
 			jsoniplist = append(jsoniplist, ip.Address)
 		}
@@ -178,9 +178,18 @@ Next:
 		sum += d
 	}
 	delay := sum / len(delays)
-	checkErr(fmt.Sprintf("%s %dms, sni ip, recorded.", ip, delay), errors.New(""), Info)
 
-	appendIP2File(IP{Address: ip, Delay: delay}, sniResultFileName)
+	hostname := "-"
+	addr, err := net.LookupAddr(ip)
+	if err == nil {
+		if len(addr) > 0 {
+			hostname = addr[0]
+		}
+	}
+
+	checkErr(fmt.Sprintf("%s %dms %s, sni ip, recorded.", ip, delay, hostname), errors.New(""), Info)
+
+	appendIP2File(IP{Address: ip, Delay: delay, HostName: hostname}, sniResultFileName)
 }
 
 //Parse config file
@@ -230,7 +239,7 @@ func appendIP2File(ip IP, filename string) {
 	checkErr(fmt.Sprintf("open file %s error: ", filename), err, Error)
 	defer f.Close()
 
-	_, err = f.WriteString(fmt.Sprintf("%s %dms\n", ip.Address, ip.Delay))
+	_, err = f.WriteString(fmt.Sprintf("%s %dms %s\n", ip.Address, ip.Delay, ip.HostName))
 	checkErr(fmt.Sprintf("append ip to file %s error: ", filename), err, Error)
 	f.Close()
 }

@@ -11,8 +11,9 @@ import (
 
 //IP struct
 type IP struct {
-	Address string
-	Delay   int
+	Address  string
+	Delay    int
+	HostName string
 }
 
 //IPs []IP
@@ -147,12 +148,16 @@ func getLastOkIP() []IP {
 		lines := strings.Split(string(bytes), "\n")
 		for _, line := range lines {
 			ipinfo := strings.Split(line, " ")
-			if len(ipinfo) == 2 {
+			if len(ipinfo) == 2 || len(ipinfo) == 3 {
 				checkedip.Address = ipinfo[0]
 				delay, err := strconv.Atoi(ipinfo[1][:len(ipinfo[1])-2])
 				checkErr("delay conversion failed: ", err, Warning)
 				checkedip.Delay = delay
-
+				hostname := "-"
+				if len(ipinfo) == 3 {
+					hostname = ipinfo[2]
+				}
+				checkedip.HostName = hostname
 				m[ipinfo[0]] = checkedip
 			}
 		}
