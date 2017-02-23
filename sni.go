@@ -19,20 +19,24 @@ import (
 
 //SNI config
 type SNI struct {
-	Concurrency      int `json:"concurrency"`
-	Timeout          int `json:"timeout"`
-	HandshakeTimeout int
-	Delay            int      `json:"delay"`
-	ServerName       []string `json:"server_name"`
-	SortByDelay      bool     `json:"sort_by_delay"`
+	Concurrency       int `json:"concurrency"`
+	Timeout           int `json:"timeout"`
+	HandshakeTimeout  int
+	Delay             int      `json:"delay"`
+	ServerName        []string `json:"server_name"`
+	SortByDelay       bool     `json:"sort_by_delay"`
+	OutputAllHostname bool
 }
 
 const (
-	sniIPFileName     string = "sniip.txt"
-	sniResultFileName string = "sniip_output.txt"
-	sniJSONFileName   string = "ip.txt"
-	configFileName    string = "sni.json"
-	certFileName      string = "cacert.pem"
+	configFileName string = "sni.json"
+	certFileName   string = "cacert.pem"
+)
+
+var (
+	sniIPFileName     = "sniip.txt"
+	sniResultFileName = "sniip_output.txt"
+	sniJSONFileName   = "ip.txt"
 )
 
 //custom log level
@@ -49,15 +53,84 @@ var tlsConfig *tls.Config
 var dialer net.Dialer
 
 func init() {
-	fmt.Println("initial...")
 	parseConfig()
 	config.HandshakeTimeout = config.Timeout
 	loadCertPem()
-	createFile()
 }
 func main() {
+	flag.Usage = func() {
+		fmt.Printf(`
+Usage: go-sni-detector [COMMANDS] [VARS]
+
+SUPPORT COMMANDS:
+	-h, --help          %s
+	-a, --allhostname   %s
+
+SUPPORT VARS:
+	-i, --snifile       %s
+	-o, --outputfile    %s
+	-j, --jsonfile      %s
+	-c, --concurrency   %s (default: %d)
+	-t, --timeout       %s (default: %dms)
+	-d, --delay         %s (default: %dms)
+	-s, --servername    %s (default: %s)
+				`, helpMsg, allHostnameMsg, sniFileMsg, outputFileMsg, jsonFileMsg, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
+	}
+	var (
+		outputAllHostname bool
+		sniFile           string
+		outputFile        string
+		jsonFile          string
+		concurrency       int
+		timeout           int
+		delay             int
+		serverNames       string
+	)
+
+	flag.BoolVar(&outputAllHostname, "a", false, allHostnameMsg)
+	flag.BoolVar(&outputAllHostname, "allhostname", false, allHostnameMsg)
+	flag.StringVar(&sniFile, "i", sniIPFileName, sniFileMsg)
+	flag.StringVar(&sniFile, "snifile", sniIPFileName, sniFileMsg)
+	flag.StringVar(&outputFile, "o", sniResultFileName, outputFileMsg)
+	flag.StringVar(&outputFile, "outputfile", sniResultFileName, outputFileMsg)
+	flag.StringVar(&jsonFile, "j", sniJSONFileName, jsonFileMsg)
+	flag.StringVar(&jsonFile, "jsonfile", sniJSONFileName, jsonFileMsg)
+	flag.IntVar(&concurrency, "c", config.Concurrency, concurrencyMsg)
+	flag.IntVar(&concurrency, "concurrency", config.Concurrency, concurrencyMsg)
+	flag.IntVar(&timeout, "t", config.Timeout, timeoutMsg)
+	flag.IntVar(&timeout, "timeout", config.Timeout, timeoutMsg)
+	flag.IntVar(&delay, "d", config.Delay, delayMsg)
+	flag.IntVar(&delay, "delay", config.Delay, delayMsg)
+	flag.StringVar(&serverNames, "s", strings.Join(config.ServerName, ", "), serverNameMsg)
+	flag.StringVar(&serverNames, "servername", strings.Join(config.ServerName, ", "), serverNameMsg)
+
 	flag.Set("logtostderr", "true")
 	flag.Parse()
+
+	sniIPFileName = sniFile
+	sniResultFileName = outputFile
+	sniJSONFileName = jsonFile
+
+	if !isFileExist(sniFile) {
+		fmt.Printf("file %s not found.\n", sniIPFileName)
+		return
+	}
+
+	config.OutputAllHostname = outputAllHostname
+	config.Concurrency = concurrency
+	config.Timeout = timeout
+	config.HandshakeTimeout = timeout
+	config.Delay = delay
+	sNs := strings.Split(serverNames, ",")
+	for i, sn := range sNs {
+		sNs[i] = strings.TrimSpace(sn)
+	}
+	config.ServerName = sNs
+
+	fmt.Printf("config=%v\n\n", config)
+	time.Sleep(5 * time.Second)
+
+	createFile()
 
 	ips := getSNIIP()
 	var lastOKIP []string
