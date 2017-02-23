@@ -256,7 +256,11 @@ Next:
 	addr, err := net.LookupAddr(ip)
 	if err == nil {
 		if len(addr) > 0 {
-			hostname = addr[0]
+			if config.OutputAllHostname {
+				hostname = strings.Join(addr, "|")
+			} else {
+				hostname = addr[0]
+			}
 		}
 	}
 
