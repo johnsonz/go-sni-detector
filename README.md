@@ -36,7 +36,7 @@ SUPPORT VARS:
 	-c, --concurrency<=number>   concurrency
 	-t, --timeout<=number>       timeout
 	-d, --delay<=number>         delay
-	-s, --servername<=number>    comma-separated server names
+	-s, --servername<=string>    comma-separated server names
 ```
 
 ## 配置说明
