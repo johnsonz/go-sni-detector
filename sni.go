@@ -65,6 +65,7 @@ Usage: go-sni-detector [COMMANDS] [VARS]
 SUPPORT COMMANDS:
 	-h, --help          %s
 	-a, --allhostname   %s
+	-r, --override      %s
 
 SUPPORT VARS:
 	-i, --snifile       %s
@@ -74,7 +75,7 @@ SUPPORT VARS:
 	-t, --timeout       %s (default: %dms)
 	-d, --delay         %s (default: %dms)
 	-s, --servername    %s (default: %s)
-				`, helpMsg, allHostnameMsg, sniFileMsg, outputFileMsg, jsonFileMsg, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
+				`, helpMsg, allHostnameMsg, overrideMsg, sniFileMsg, outputFileMsg, jsonFileMsg, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
 	}
 	var (
 		outputAllHostname bool
@@ -85,6 +86,7 @@ SUPPORT VARS:
 		timeout           int
 		delay             int
 		serverNames       string
+		isOverride        bool
 	)
 
 	flag.BoolVar(&outputAllHostname, "a", false, allHostnameMsg)
@@ -103,6 +105,8 @@ SUPPORT VARS:
 	flag.IntVar(&delay, "delay", config.Delay, delayMsg)
 	flag.StringVar(&serverNames, "s", strings.Join(config.ServerName, ", "), serverNameMsg)
 	flag.StringVar(&serverNames, "servername", strings.Join(config.ServerName, ", "), serverNameMsg)
+	flag.BoolVar(&isOverride, "r", false, overrideMsg)
+	flag.BoolVar(&isOverride, "override", false, overrideMsg)
 
 	flag.Set("logtostderr", "true")
 	flag.Parse()
@@ -181,6 +185,7 @@ SUPPORT VARS:
 	jsonip += `"`
 	writeIP2File(jsonip, sniJSONFileName)
 
+	updateConfig(isOverride)
 	fmt.Printf("\ntime: %ds, ok ip count: %d, matched ip with delay(%dms) count: %d\n\n", cost, len(rawiplist), config.Delay, len(jsoniplist))
 	fmt.Scanln()
 }
@@ -298,6 +303,23 @@ func checkErr(messge string, err error, level int) {
 		case Error:
 			glog.Fatalln(messge, err)
 		}
+	}
+}
+
+func updateConfig(isOverride bool) {
+	if isOverride {
+		writeIP2File(
+			fmt.Sprintf(`{
+    "concurrency":%d,
+    "timeout":%d,
+    "delay":%d,
+    "server_name":[
+        %s
+    ],
+    "sort_by_delay":true
+}`, config.Concurrency, config.Timeout, config.Delay,
+				fmt.Sprint("\"", strings.Join(config.ServerName, "\",\n        \""), "\"")), configFileName)
+		fmt.Println("update sni.json successfully")
 	}
 }
 
