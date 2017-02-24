@@ -21,7 +21,7 @@
 [gox](https://github.com/mitchellh/gox)
 
 ## 高级用法
-支持命令，优先级高于配置文件，通过指定`-r`参数可以修改配置文件。
+支持命令，优先级高于配置文件，通过指定`-r`命令可以直接将指定的参数写入到配置文件。
 ```
 Usage: go-sni-detector [COMMAND] [VARS]
 
