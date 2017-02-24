@@ -21,13 +21,14 @@
 [gox](https://github.com/mitchellh/gox)
 
 ## 高级用法
-支持命令，优先级高于配置文件，但配置文件不会被修改。
+支持命令，优先级高于配置文件，通过指定`-r`参数可以修改配置文件。
 ```
 Usage: go-sni-detector [COMMAND] [VARS]
 
 SUPPORT COMMANDS:
 	-h, --help                   help message
 	-a, --allhostname            lookup all hostname from ip, or lookup the first one by default
+	-r, --override               override settings
 
 SUPPORT VARS:
 	-i, --snifile<=path>         put your ip ranges into this file
