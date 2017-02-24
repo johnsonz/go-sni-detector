@@ -8,11 +8,11 @@
 
 请将待测试的ip段放到sniip.txt文件，支持以下ip格式：
 
-1. xxx.xxx.xxx.xxx
-2. xxx.xxx.xxx.xxx/xx
-3. xxx.xxx.xxx.xxx-xxx.xxx.xxx.xxx
-4. xxx.xxx.xxx.xxx-xxx.
-5. xxx.-xxx.
+1. 127.0.0.1
+2. 127.0.0.0/24
+3. 127.0.0.0-127.0.0.255
+4. 127.0.0.0-127.0.0.
+5. 127.0.0.-127.0.1.
 
 ## 下载地址
 [Latest release](https://github.com/johnsonz/go-sni-detector/releases)
