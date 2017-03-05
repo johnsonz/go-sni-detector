@@ -46,3 +46,6 @@ SUPPORT VARS:
 `"delay":1200` 扫描完成后，提取所有小于等于该延迟的ip
 
 `"server_name"` 用于测试SNI服务器的域名
+
+## Wiki
+[Wiki](https://plumwine.me/go-sni-detector-usage-wiki/)
