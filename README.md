@@ -17,7 +17,7 @@
 ## 下载地址
 [Latest release](https://github.com/johnsonz/go-sni-detector/releases)
 
-## 编译
+## 交叉编译
 [gox](https://github.com/mitchellh/gox)
 
 ## 高级用法
