@@ -49,6 +49,7 @@ func getSNIIPRange() []string {
 	lines := strings.Split(string(bytes), "\n")
 	for _, line := range lines {
 		line = strings.Replace(line, "\r", "", -1)
+		line = strings.TrimSpace(line)
 		if len(line) > 7 {
 			m[line] = line
 		}
