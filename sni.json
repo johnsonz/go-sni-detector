@@ -6,5 +6,6 @@
         "www.google.com",
         "www.bing.com"
     ],
-    "sort_by_delay":true
+    "sort_by_delay":true,
+    "always_check_all":false
 }

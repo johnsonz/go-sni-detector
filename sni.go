@@ -25,6 +25,7 @@ type SNI struct {
 	Delay             int      `json:"delay"`
 	ServerName        []string `json:"server_name"`
 	SortByDelay       bool     `json:"sort_by_delay"`
+	AlwaysCheck       bool     `json:"always_check_all"`
 	OutputAllHostname bool
 }
 
@@ -137,8 +138,12 @@ SUPPORT VARS:
 
 	createFile()
 
-	//ips := getSNIIP()
-	ips := getDifference(getSNIIP(), getLastNoIP())
+	var ips []string
+	if config.AlwaysCheck {
+		ips = getSNIIP()
+	} else {
+		ips = getDifference(getSNIIP(), getLastNoIP())
+	}
 
 	var lastOKIP []string
 	for _, ip := range getLastOkIP() {
