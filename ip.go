@@ -168,3 +168,40 @@ func getLastOkIP() []IP {
 	}
 	return ips
 }
+
+//get last no ip
+func getLastNoIP() (ips []string) {
+	m := make(map[string]string)
+	if isFileExist(sniNoFileName) {
+		bytes, err := ioutil.ReadFile(sniNoFileName)
+		checkErr(fmt.Sprintf("read file %s error: ", sniNoFileName), err, Error)
+		lines := strings.Split(string(bytes), "\n")
+		for _, line := range lines {
+			ipinfo := strings.Split(line, " ")
+			if len(ipinfo[0]) > 6 {
+				m[ipinfo[0]] = ipinfo[0]
+			}
+		}
+	}
+	for _, v := range m {
+		ips = append(ips, v)
+	}
+	return ips
+}
+
+//remove scanned ip
+func getDifference(s, t []string) (ips []string) {
+	for _, vs := range s {
+		flag := false
+		for _, vt := range t {
+			if vs == vt {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			ips = append(ips, vs)
+		}
+	}
+	return ips
+}

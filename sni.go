@@ -36,6 +36,7 @@ const (
 var (
 	sniIPFileName     = "sniip.txt"
 	sniResultFileName = "sniip_output.txt"
+	sniNoFileName     = "sniip_no.txt"
 	sniJSONFileName   = "ip.txt"
 )
 
@@ -136,7 +137,9 @@ SUPPORT VARS:
 
 	createFile()
 
-	ips := getSNIIP()
+	//ips := getSNIIP()
+	ips := getDifference(getSNIIP(), getLastNoIP())
+
 	var lastOKIP []string
 	for _, ip := range getLastOkIP() {
 		lastOKIP = append(lastOKIP, ip.Address)
@@ -202,6 +205,7 @@ func loadCertPem() {
 func checkIP(ip string, done chan bool) {
 	defer func() {
 		<-done
+		appendIP2File(IP{Address: ip, Delay: 0, HostName: "-"}, sniNoFileName)
 	}()
 	delays := make([]int, len(config.ServerName))
 	dialer = net.Dialer{
@@ -291,6 +295,10 @@ func createFile() {
 	if !isFileExist(sniJSONFileName) {
 		_, err := os.Create(sniJSONFileName)
 		checkErr(fmt.Sprintf("create file %s error: ", sniJSONFileName), err, Error)
+	}
+	if !isFileExist(sniNoFileName) {
+		_, err := os.Create(sniNoFileName)
+		checkErr(fmt.Sprintf("create file %s error: ", sniNoFileName), err, Error)
 	}
 }
 
