@@ -177,6 +177,7 @@ func getLastNoIP() (ips []string) {
 		checkErr(fmt.Sprintf("read file %s error: ", sniNoFileName), err, Error)
 		lines := strings.Split(string(bytes), "\n")
 		for _, line := range lines {
+			line = strings.Replace(line, "\r", "", -1)
 			ipinfo := strings.Split(line, " ")
 			if len(ipinfo[0]) > 6 {
 				m[ipinfo[0]] = ipinfo[0]
