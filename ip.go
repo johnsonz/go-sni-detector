@@ -191,6 +191,9 @@ func getLastNoIP() (ips []string) {
 
 //remove scanned ip
 func getDifference(s, t []string) (ips []string) {
+	if len(t) == 0 {
+		return s
+	}
 	for _, vs := range s {
 		flag := false
 		for _, vt := range t {
