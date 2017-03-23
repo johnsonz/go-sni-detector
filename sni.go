@@ -25,7 +25,7 @@ type SNI struct {
 	Delay             int      `json:"delay"`
 	ServerName        []string `json:"server_name"`
 	SortByDelay       bool     `json:"sort_by_delay"`
-	AlwaysCheck       bool     `json:"always_check_all"`
+	AlwaysCheck       bool     `json:"always_check_all_ip"`
 	OutputAllHostname bool
 }
 
@@ -329,7 +329,8 @@ func updateConfig(isOverride bool) {
     "server_name":[
         %s
     ],
-    "sort_by_delay":true
+    "sort_by_delay":true,
+	"always_check_all_ip":false
 }`, config.Concurrency, config.Timeout, config.Delay,
 				fmt.Sprint("\"", strings.Join(config.ServerName, "\",\n        \""), "\"")), configFileName)
 		fmt.Println("update sni.json successfully")
