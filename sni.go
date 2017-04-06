@@ -36,7 +36,7 @@ const (
 
 var (
 	sniIPFileName     = "sniip.txt"
-	sniResultFileName = "sniip_output.txt"
+	sniResultFileName = "sniip_ok.txt"
 	sniNoFileName     = "sniip_no.txt"
 	sniJSONFileName   = "ip.txt"
 )
@@ -348,7 +348,7 @@ func isFileExist(file string) bool {
 
 //append ip to related file
 func appendIP2File(ip IP, filename string) {
-	f, err := os.OpenFile(filename, os.O_APPEND, os.ModeAppend)
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	checkErr(fmt.Sprintf("open file %s error: ", filename), err, Error)
 	defer f.Close()
 
