@@ -31,13 +31,14 @@ SUPPORT COMMANDS:
 	-r, --override               override settings
 
 SUPPORT VARS:
-	-i, --snifile<=path>         put your ip ranges into this file
-	-o, --outputfile<=path>      output sni ip to this file
-	-j, --jsonfile<=path>        output sni ip as json format to this file
-	-c, --concurrency<=number>   concurrency
-	-t, --timeout<=number>       timeout
-	-d, --delay<=number>         delay
-	-s, --servername<=string>    comma-separated server names
+	-i, --snifile<=path>                put your ip ranges into this file
+	-o, --outputfile<=path>             output sni ip to this file
+	-j, --jsonfile<=path>               output sni ip as json format to this file
+	-c, --concurrency<=number>          concurrency
+	-t, --timeout<=number>              timeout
+	-ht, --handshaketimeout<=number>    handshake timeout
+	-d, --delay<=number>                delay
+	-s, --servername<=string>           comma-separated server names
 ```
 
 ## 配置说明
