@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -39,6 +40,7 @@ var (
 	sniResultFileName = "sniip_ok.txt"
 	sniNoFileName     = "sniip_no.txt"
 	sniJSONFileName   = "ip.txt"
+	statusFileName    = ".status"
 )
 
 //custom log level
@@ -139,12 +141,24 @@ SUPPORT VARS:
 	createFile()
 
 	var ips []string
+	status := getStatus()
+	status = strings.Replace(strings.Replace(status, "\n", "", -1), "\r", "", -1)
 	if config.AlwaysCheck {
 		ips = getSNIIP()
 	} else {
-		ips = getDifference(getSNIIP(), getLastNoIP())
+		if status == "true" {
+			fmt.Println("所有IP已扫描，5秒钟后将执行重新扫描。")
+			for i := 1; i < 6; i++ {
+				time.Sleep(time.Millisecond * 1000)
+				fmt.Print("\r", i, "s")
+			}
+			err := os.Truncate(sniNoFileName, 0)
+			checkErr(fmt.Sprintf("truncate file %s error: ", sniNoFileName), err, Error)
+			ips = getSNIIP()
+		} else {
+			ips = getDifference(getSNIIP(), getLastNoIP())
+		}
 	}
-
 	var lastOKIP []string
 	for _, ip := range getLastOkIP() {
 		lastOKIP = append(lastOKIP, ip.Address)
@@ -152,6 +166,7 @@ SUPPORT VARS:
 	ips = append(lastOKIP, ips...)
 	err := os.Truncate(sniResultFileName, 0)
 	checkErr(fmt.Sprintf("truncate file %s error: ", sniResultFileName), err, Error)
+	write2File("false", statusFileName)
 	jobs := make(chan string, config.Concurrency)
 	done := make(chan bool, config.Concurrency)
 
@@ -185,15 +200,16 @@ SUPPORT VARS:
 	}
 
 	ipstr := strings.Join(rawiplist, "\n")
-	writeIP2File(ipstr, sniResultFileName)
+	write2File(ipstr, sniResultFileName)
 	jsonip := strings.Join(jsoniplist, "|")
 	jsonip += "\n\n\n"
 	jsonip += `"`
 	jsonip += strings.Join(jsoniplist, `","`)
 	jsonip += `"`
-	writeIP2File(jsonip, sniJSONFileName)
+	write2File(jsonip, sniJSONFileName)
 
 	updateConfig(isOverride)
+	write2File("true", statusFileName)
 	fmt.Printf("\ntime: %ds, ok ip count: %d, matched ip with delay(%dms) count: %d\n\n", cost, len(rawiplist), config.Delay, len(jsoniplist))
 	fmt.Scanln()
 }
@@ -291,6 +307,12 @@ func parseConfig() {
 	checkErr("parse config file error: ", err, Error)
 }
 
+func getStatus() string {
+	status, err := ioutil.ReadFile(statusFileName)
+	checkErr(fmt.Sprintf("read file %s error: ", statusFileName), err, Error)
+	return string(status[:])
+}
+
 //Create files if they donnot exist, or truncate them.
 func createFile() {
 	if !isFileExist(sniResultFileName) {
@@ -304,6 +326,10 @@ func createFile() {
 	if !isFileExist(sniNoFileName) {
 		_, err := os.Create(sniNoFileName)
 		checkErr(fmt.Sprintf("create file %s error: ", sniNoFileName), err, Error)
+	}
+	if !isFileExist(statusFileName) {
+		_, err := os.Create(statusFileName)
+		checkErr(fmt.Sprintf("create file %s error: ", statusFileName), err, Error)
 	}
 }
 
@@ -321,7 +347,7 @@ func checkErr(messge string, err error, level int) {
 
 func updateConfig(isOverride bool) {
 	if isOverride {
-		writeIP2File(
+		write2File(
 			fmt.Sprintf(`{
     "concurrency":%d,
     "timeout":%d,
@@ -358,9 +384,16 @@ func appendIP2File(ip IP, filename string) {
 }
 
 //write ip to related file
-func writeIP2File(ips string, filename string) {
+func write2File(str string, filename string) {
 	err := os.Truncate(filename, 0)
 	checkErr(fmt.Sprintf("truncate file %s error: ", filename), err, Error)
-	err = ioutil.WriteFile(filename, []byte(ips), 0755)
+	err = ioutil.WriteFile(filename, []byte(str), 0755)
 	checkErr(fmt.Sprintf("write ip to file %s error: ", filename), err, Error)
+}
+
+func getInputFromCommand() string {
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	input = strings.Replace(strings.Replace(input, "\n", "", -1), "\r", "", -1)
+	return input
 }
