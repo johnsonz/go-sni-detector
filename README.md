@@ -27,7 +27,7 @@ Usage: go-sni-detector [COMMAND] [VARS]
 
 SUPPORT COMMANDS:
 	-h, --help                   help message
-	-a, --allhostname            lookup all hostname from ip, or lookup the first one by default
+	-a, --allhostname            lookup all hostname of ip, or lookup the first one by default
 	-r, --override               override settings
 
 SUPPORT VARS:
