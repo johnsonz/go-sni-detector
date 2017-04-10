@@ -28,6 +28,7 @@ type SNI struct {
 	SortByDelay       bool     `json:"sort_by_delay"`
 	AlwaysCheck       bool     `json:"always_check_all_ip"`
 	OutputAllHostname bool
+	IsOverride        bool
 }
 
 const (
@@ -61,83 +62,8 @@ func init() {
 	loadCertPem()
 }
 func main() {
-	flag.Usage = func() {
-		fmt.Printf(`
-Usage: go-sni-detector [COMMANDS] [VARS]
 
-SUPPORT COMMANDS:
-	-h, --help          %s
-	-a, --allhostname   %s
-	-r, --override      %s
-
-SUPPORT VARS:
-	-i, --snifile           %s
-	-o, --outputfile        %s
-	-j, --jsonfile          %s
-	-c, --concurrency       %s (default: %d)
-	-t, --timeout           %s (default: %dms)
-	-ht, --handshaketimeout %s (default: %dms)
-	-d, --delay             %s (default: %dms)
-	-s, --servername        %s (default: %s)
-				`, helpMsg, allHostnameMsg, overrideMsg, sniFileMsg, outputFileMsg, jsonFileMsg, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, handshakeTimeoutMsg, config.HandshakeTimeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
-	}
-	var (
-		outputAllHostname bool
-		sniFile           string
-		outputFile        string
-		jsonFile          string
-		concurrency       int
-		timeout           int
-		handshaketimeout  int
-		delay             int
-		serverNames       string
-		isOverride        bool
-	)
-
-	flag.BoolVar(&outputAllHostname, "a", false, allHostnameMsg)
-	flag.BoolVar(&outputAllHostname, "allhostname", false, allHostnameMsg)
-	flag.StringVar(&sniFile, "i", sniIPFileName, sniFileMsg)
-	flag.StringVar(&sniFile, "snifile", sniIPFileName, sniFileMsg)
-	flag.StringVar(&outputFile, "o", sniResultFileName, outputFileMsg)
-	flag.StringVar(&outputFile, "outputfile", sniResultFileName, outputFileMsg)
-	flag.StringVar(&jsonFile, "j", sniJSONFileName, jsonFileMsg)
-	flag.StringVar(&jsonFile, "jsonfile", sniJSONFileName, jsonFileMsg)
-	flag.IntVar(&concurrency, "c", config.Concurrency, concurrencyMsg)
-	flag.IntVar(&concurrency, "concurrency", config.Concurrency, concurrencyMsg)
-	flag.IntVar(&timeout, "t", config.Timeout, timeoutMsg)
-	flag.IntVar(&timeout, "timeout", config.Timeout, timeoutMsg)
-	flag.IntVar(&handshaketimeout, "ht", config.HandshakeTimeout, handshakeTimeoutMsg)
-	flag.IntVar(&handshaketimeout, "handshaketimeout", config.HandshakeTimeout, handshakeTimeoutMsg)
-	flag.IntVar(&delay, "d", config.Delay, delayMsg)
-	flag.IntVar(&delay, "delay", config.Delay, delayMsg)
-	flag.StringVar(&serverNames, "s", strings.Join(config.ServerName, ", "), serverNameMsg)
-	flag.StringVar(&serverNames, "servername", strings.Join(config.ServerName, ", "), serverNameMsg)
-	flag.BoolVar(&isOverride, "r", false, overrideMsg)
-	flag.BoolVar(&isOverride, "override", false, overrideMsg)
-
-	flag.Set("logtostderr", "true")
-	flag.Parse()
-
-	sniIPFileName = sniFile
-	sniResultFileName = outputFile
-	sniJSONFileName = jsonFile
-
-	if !isFileExist(sniFile) {
-		fmt.Printf("file %s not found.\n", sniIPFileName)
-		return
-	}
-
-	config.OutputAllHostname = outputAllHostname
-	config.Concurrency = concurrency
-	config.Timeout = timeout
-	config.HandshakeTimeout = handshaketimeout
-	config.Delay = delay
-	sNs := strings.Split(serverNames, ",")
-	for i, sn := range sNs {
-		sNs[i] = strings.TrimSpace(sn)
-	}
-	config.ServerName = sNs
-
+	usage()
 	fmt.Printf("%v\n\n", config)
 	time.Sleep(5 * time.Second)
 
@@ -190,30 +116,10 @@ SUPPORT VARS:
 	}
 	t1 := time.Now()
 	cost := int(t1.Sub(t0).Seconds())
-	var rawiplist, jsoniplist []string
-	okIPs := getLastOkIP()
-	if config.SortByDelay {
-		sort.Sort(ByDelay{IPs(okIPs)})
-	}
-	for _, ip := range okIPs {
-		rawiplist = append(rawiplist, fmt.Sprintf("%s %dms %s", ip.Address, ip.Delay, ip.HostName))
-		if ip.Delay <= config.Delay {
-			jsoniplist = append(jsoniplist, ip.Address)
-		}
-	}
-
-	ipstr := strings.Join(rawiplist, "\n")
-	write2File(ipstr, sniResultFileName)
-	jsonip := strings.Join(jsoniplist, "|")
-	jsonip += "\n\n\n"
-	jsonip += `"`
-	jsonip += strings.Join(jsoniplist, `","`)
-	jsonip += `"`
-	write2File(jsonip, sniJSONFileName)
-
-	updateConfig(isOverride)
+	rawipnum, jsonipnum := getJSONIP()
+	updateConfig(config.IsOverride)
 	write2File("true", statusFileName)
-	fmt.Printf("\ntime: %ds, ok ip count: %d, matched ip with delay(%dms) count: %d\n\n", cost, len(rawiplist), config.Delay, len(jsoniplist))
+	fmt.Printf("\ntime: %ds, ok ip count: %d, matched ip with delay(%dms) count: %d\n\n", cost, rawipnum, config.Delay, jsonipnum)
 	fmt.Scanln()
 }
 
@@ -374,6 +280,31 @@ func isFileExist(file string) bool {
 	}
 	return true
 }
+func getJSONIP() (rawipnum, jsonipnum int) {
+	var rawiplist, jsoniplist []string
+	okIPs := getLastOkIP()
+	if config.SortByDelay {
+		sort.Sort(ByDelay{IPs(okIPs)})
+	}
+	for _, ip := range okIPs {
+		rawiplist = append(rawiplist, fmt.Sprintf("%s %dms %s", ip.Address, ip.Delay, ip.HostName))
+		if ip.Delay <= config.Delay {
+			jsoniplist = append(jsoniplist, ip.Address)
+		}
+	}
+
+	ipstr := strings.Join(rawiplist, "\n")
+	rawipnum = len(rawiplist)
+	write2File(ipstr, sniResultFileName)
+	jsonip := strings.Join(jsoniplist, "|")
+	jsonip += "\n\n\n"
+	jsonip += `"`
+	jsonip += strings.Join(jsoniplist, `","`)
+	jsonip += `"`
+	jsonipnum = len(jsoniplist)
+	write2File(jsonip, sniJSONFileName)
+	return
+}
 
 //append ip to related file
 func appendIP2File(ip IP, filename string) {
@@ -394,6 +325,85 @@ func write2File(str string, filename string) {
 	checkErr(fmt.Sprintf("write ip to file %s error: ", filename), err, Error)
 }
 
+func usage() {
+	flag.Usage = func() {
+		fmt.Printf(`
+Usage: go-sni-detector [COMMANDS] [VARS]
+
+SUPPORT COMMANDS:
+	-h, --help          %s
+	-a, --allhostname   %s
+	-r, --override      %s
+
+SUPPORT VARS:
+	-i, --snifile           %s
+	-o, --outputfile        %s
+	-j, --jsonfile          %s
+	-c, --concurrency       %s (default: %d)
+	-t, --timeout           %s (default: %dms)
+	-ht, --handshaketimeout %s (default: %dms)
+	-d, --delay             %s (default: %dms)
+	-s, --servername        %s (default: %s)
+				`, helpMsg, allHostnameMsg, overrideMsg, sniFileMsg, outputFileMsg, jsonFileMsg, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, handshakeTimeoutMsg, config.HandshakeTimeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
+	}
+	var (
+		outputAllHostname bool
+		sniFile           string
+		outputFile        string
+		jsonFile          string
+		concurrency       int
+		timeout           int
+		handshaketimeout  int
+		delay             int
+		serverNames       string
+		isOverride        bool
+	)
+
+	flag.BoolVar(&outputAllHostname, "a", false, allHostnameMsg)
+	flag.BoolVar(&outputAllHostname, "allhostname", false, allHostnameMsg)
+	flag.StringVar(&sniFile, "i", sniIPFileName, sniFileMsg)
+	flag.StringVar(&sniFile, "snifile", sniIPFileName, sniFileMsg)
+	flag.StringVar(&outputFile, "o", sniResultFileName, outputFileMsg)
+	flag.StringVar(&outputFile, "outputfile", sniResultFileName, outputFileMsg)
+	flag.StringVar(&jsonFile, "j", sniJSONFileName, jsonFileMsg)
+	flag.StringVar(&jsonFile, "jsonfile", sniJSONFileName, jsonFileMsg)
+	flag.IntVar(&concurrency, "c", config.Concurrency, concurrencyMsg)
+	flag.IntVar(&concurrency, "concurrency", config.Concurrency, concurrencyMsg)
+	flag.IntVar(&timeout, "t", config.Timeout, timeoutMsg)
+	flag.IntVar(&timeout, "timeout", config.Timeout, timeoutMsg)
+	flag.IntVar(&handshaketimeout, "ht", config.HandshakeTimeout, handshakeTimeoutMsg)
+	flag.IntVar(&handshaketimeout, "handshaketimeout", config.HandshakeTimeout, handshakeTimeoutMsg)
+	flag.IntVar(&delay, "d", config.Delay, delayMsg)
+	flag.IntVar(&delay, "delay", config.Delay, delayMsg)
+	flag.StringVar(&serverNames, "s", strings.Join(config.ServerName, ", "), serverNameMsg)
+	flag.StringVar(&serverNames, "servername", strings.Join(config.ServerName, ", "), serverNameMsg)
+	flag.BoolVar(&isOverride, "r", false, overrideMsg)
+	flag.BoolVar(&isOverride, "override", false, overrideMsg)
+
+	flag.Set("logtostderr", "true")
+	flag.Parse()
+
+	sniIPFileName = sniFile
+	sniResultFileName = outputFile
+	sniJSONFileName = jsonFile
+
+	if !isFileExist(sniFile) {
+		fmt.Printf("file %s not found.\n", sniIPFileName)
+		return
+	}
+
+	config.OutputAllHostname = outputAllHostname
+	config.Concurrency = concurrency
+	config.Timeout = timeout
+	config.HandshakeTimeout = handshaketimeout
+	config.Delay = delay
+	sNs := strings.Split(serverNames, ",")
+	for i, sn := range sNs {
+		sNs[i] = strings.TrimSpace(sn)
+	}
+	config.ServerName = sNs
+	config.IsOverride = isOverride
+}
 func getInputFromCommand() string {
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')
