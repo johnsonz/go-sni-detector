@@ -106,8 +106,8 @@ SUPPORT VARS:
 	flag.IntVar(&concurrency, "concurrency", config.Concurrency, concurrencyMsg)
 	flag.IntVar(&timeout, "t", config.Timeout, timeoutMsg)
 	flag.IntVar(&timeout, "timeout", config.Timeout, timeoutMsg)
-	flag.IntVar(&timeout, "ht", config.HandshakeTimeout, handshakeTimeoutMsg)
-	flag.IntVar(&timeout, "handshaketimeout", config.HandshakeTimeout, handshakeTimeoutMsg)
+	flag.IntVar(&handshaketimeout, "ht", config.HandshakeTimeout, handshakeTimeoutMsg)
+	flag.IntVar(&handshaketimeout, "handshaketimeout", config.HandshakeTimeout, handshakeTimeoutMsg)
 	flag.IntVar(&delay, "d", config.Delay, delayMsg)
 	flag.IntVar(&delay, "delay", config.Delay, delayMsg)
 	flag.StringVar(&serverNames, "s", strings.Join(config.ServerName, ", "), serverNameMsg)
@@ -138,7 +138,7 @@ SUPPORT VARS:
 	}
 	config.ServerName = sNs
 
-	fmt.Printf("config=%v\n\n", config)
+	fmt.Printf("%v\n\n", config)
 	time.Sleep(5 * time.Second)
 
 	createFile()
