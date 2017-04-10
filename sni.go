@@ -20,9 +20,9 @@ import (
 
 //SNI config
 type SNI struct {
-	Concurrency       int `json:"concurrency"`
-	Timeout           int `json:"timeout"`
-	HandshakeTimeout  int
+	Concurrency       int      `json:"concurrency"`
+	Timeout           int      `json:"timeout"`
+	HandshakeTimeout  int      `json:"handshake_timeout"`
 	Delay             int      `json:"delay"`
 	ServerName        []string `json:"server_name"`
 	SortByDelay       bool     `json:"sort_by_delay"`
@@ -58,7 +58,6 @@ var dialer net.Dialer
 
 func init() {
 	parseConfig()
-	config.HandshakeTimeout = config.Timeout
 	loadCertPem()
 }
 func main() {
@@ -72,14 +71,15 @@ SUPPORT COMMANDS:
 	-r, --override      %s
 
 SUPPORT VARS:
-	-i, --snifile       %s
-	-o, --outputfile    %s
-	-j, --jsonfile      %s
-	-c, --concurrency   %s (default: %d)
-	-t, --timeout       %s (default: %dms)
-	-d, --delay         %s (default: %dms)
-	-s, --servername    %s (default: %s)
-				`, helpMsg, allHostnameMsg, overrideMsg, sniFileMsg, outputFileMsg, jsonFileMsg, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
+	-i, --snifile           %s
+	-o, --outputfile        %s
+	-j, --jsonfile          %s
+	-c, --concurrency       %s (default: %d)
+	-t, --timeout           %s (default: %dms)
+	-ht, --handshaketimeout %s (default: %dms)
+	-d, --delay             %s (default: %dms)
+	-s, --servername        %s (default: %s)
+				`, helpMsg, allHostnameMsg, overrideMsg, sniFileMsg, outputFileMsg, jsonFileMsg, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, handshakeTimeoutMsg, config.HandshakeTimeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
 	}
 	var (
 		outputAllHostname bool
@@ -88,6 +88,7 @@ SUPPORT VARS:
 		jsonFile          string
 		concurrency       int
 		timeout           int
+		handshaketimeout  int
 		delay             int
 		serverNames       string
 		isOverride        bool
@@ -105,6 +106,8 @@ SUPPORT VARS:
 	flag.IntVar(&concurrency, "concurrency", config.Concurrency, concurrencyMsg)
 	flag.IntVar(&timeout, "t", config.Timeout, timeoutMsg)
 	flag.IntVar(&timeout, "timeout", config.Timeout, timeoutMsg)
+	flag.IntVar(&timeout, "ht", config.HandshakeTimeout, handshakeTimeoutMsg)
+	flag.IntVar(&timeout, "handshaketimeout", config.HandshakeTimeout, handshakeTimeoutMsg)
 	flag.IntVar(&delay, "d", config.Delay, delayMsg)
 	flag.IntVar(&delay, "delay", config.Delay, delayMsg)
 	flag.StringVar(&serverNames, "s", strings.Join(config.ServerName, ", "), serverNameMsg)
@@ -127,7 +130,7 @@ SUPPORT VARS:
 	config.OutputAllHostname = outputAllHostname
 	config.Concurrency = concurrency
 	config.Timeout = timeout
-	config.HandshakeTimeout = timeout
+	config.HandshakeTimeout = handshaketimeout
 	config.Delay = delay
 	sNs := strings.Split(serverNames, ",")
 	for i, sn := range sNs {

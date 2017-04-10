@@ -1,6 +1,7 @@
 {
     "concurrency":100,
     "timeout":8000,
+    "handshake_timeout":8000,
     "delay":1200,
     "server_name":[
         "www.google.com",
