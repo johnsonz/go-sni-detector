@@ -8,5 +8,5 @@
         "www.bing.com"
     ],
     "sort_by_delay":true,
-    "always_check_all_ip":false
+    "always_check_all_ip":true
 }
