@@ -50,3 +50,6 @@ SUPPORT VARS:
 
 ## Wiki
 [Wiki](https://plumwine.me/go-sni-detector-usage-wiki/)
+
+## 其它工具
+扫描google ip工具：[go-checkiptools](https://github.com/johnsonz/go-checkiptools)
