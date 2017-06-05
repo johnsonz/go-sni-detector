@@ -4,7 +4,9 @@
 ============
 
 ## 说明
-用于扫描SNI服务器，sniip_output.txt中的延迟值为配置中指定的各server_name的延迟的平均值。
+用于扫描SNI服务器，sniip_ok.txt中的延迟值为配置中指定的各server_name的延迟的平均值。
+
+由于在初始化时读取了所有ip以便执行去重操作，所以会消耗大量的内存，对于需要扫描大量ip且机器性能不够强大的用户，请将'soft_mode'置为'true'。
 
 请将待测试的ip段放到sniip.txt文件，支持以下ip格式：
 
