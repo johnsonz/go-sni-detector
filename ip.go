@@ -129,6 +129,17 @@ func getSNIIP() []string {
 	return ips
 }
 
+//get all sni ip
+func getSNIIPQueue() {
+	ipRanges := getSNIIPRange()
+	for _, ipRange := range ipRanges {
+		parsedips := parseSNIIPRange(ipRange)
+		for _, ip := range parsedips {
+			totalips <- ip
+		}
+	}
+}
+
 func inc(ip net.IP) {
 	for j := len(ip) - 1; j >= 0; j-- {
 		ip[j]++

@@ -27,6 +27,7 @@ type SNI struct {
 	ServerName        []string `json:"server_name"`
 	SortByDelay       bool     `json:"sort_by_delay"`
 	AlwaysCheck       bool     `json:"always_check_all_ip"`
+	SoftMode          bool     `json:"soft_mode"`
 	OutputAllHostname bool
 	IsOverride        bool
 }
@@ -56,6 +57,7 @@ var config SNI
 var certPool *x509.CertPool
 var tlsConfig *tls.Config
 var dialer net.Dialer
+var totalips chan string
 
 func init() {
 	parseConfig()
@@ -72,6 +74,25 @@ func main() {
 	var ips []string
 	status := getStatus()
 	status = strings.Replace(strings.Replace(status, "\n", "", -1), "\r", "", -1)
+
+	var lastOKIP []string
+	for _, ip := range getLastOkIP() {
+		lastOKIP = append(lastOKIP, ip.Address)
+	}
+
+	if config.SoftMode {
+		totalips = make(chan string, config.Concurrency*10)
+		go func() {
+			for _, ip := range lastOKIP {
+				totalips <- ip
+			}
+			getSNIIPQueue()
+			close(totalips)
+		}()
+
+		goto Queue
+	}
+
 	if config.AlwaysCheck {
 		ips = getSNIIP()
 	} else {
@@ -88,11 +109,9 @@ func main() {
 			ips = getDifference(getSNIIP(), getLastNoIP())
 		}
 	}
-	var lastOKIP []string
-	for _, ip := range getLastOkIP() {
-		lastOKIP = append(lastOKIP, ip.Address)
-	}
+
 	ips = append(lastOKIP, ips...)
+Queue:
 	err := os.Truncate(sniResultFileName, 0)
 	checkErr(fmt.Sprintf("truncate file %s error: ", sniResultFileName), err, Error)
 	write2File("false", statusFileName)
@@ -102,8 +121,14 @@ func main() {
 	//check all sni ip begin
 	t0 := time.Now()
 	go func() {
-		for _, ip := range ips {
-			jobs <- ip
+		if config.SoftMode {
+			for ip := range totalips {
+				jobs <- ip
+			}
+		} else {
+			for _, ip := range ips {
+				jobs <- ip
+			}
 		}
 		close(jobs)
 	}()
