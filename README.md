@@ -19,9 +19,6 @@
 ## 下载地址
 [Latest release](https://github.com/johnsonz/go-sni-detector/releases)
 
-## 交叉编译
-[gox](https://github.com/mitchellh/gox)
-
 ## 高级用法
 支持命令，优先级高于配置文件，通过指定`-r`命令可以直接将指定的参数写入到配置文件。
 ```
@@ -32,7 +29,7 @@ SUPPORT COMMANDS:
 	-a, --allhostname            lookup all hostname of ip, or lookup the first one by default
 	-r, --override               override settings
 	-m, --softmode               reduce memory usage
-	
+
 SUPPORT VARS:
 	-i, --snifile<=path>                put your ip ranges into this file
 	-o, --outputfile<=path>             output sni ip to this file
