@@ -364,15 +364,15 @@ SUPPORT COMMANDS:
 	-m, --softmode      %s
 
 SUPPORT VARS:
-	-i, --snifile           %s
-	-o, --outputfile        %s
-	-j, --jsonfile          %s
+	-i, --snifile           %s (default: %s)
+	-o, --outputfile        %s (default: %s)
+	-j, --jsonfile          %s (default: %s)
 	-c, --concurrency       %s (default: %d)
 	-t, --timeout           %s (default: %dms)
 	-ht, --handshaketimeout %s (default: %dms)
 	-d, --delay             %s (default: %dms)
 	-s, --servername        %s (default: %s)
-				`, helpMsg, allHostnameMsg, overrideMsg, softModeMsg, sniFileMsg, outputFileMsg, jsonFileMsg, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, handshakeTimeoutMsg, config.HandshakeTimeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
+				`, helpMsg, allHostnameMsg, overrideMsg, softModeMsg, sniFileMsg, sniIPFileName, outputFileMsg, sniResultFileName, jsonFileMsg, sniJSONFileName, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, handshakeTimeoutMsg, config.HandshakeTimeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
 	}
 	var (
 		outputAllHostname bool
