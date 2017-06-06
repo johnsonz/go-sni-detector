@@ -6,7 +6,7 @@
 ## 说明
 用于扫描SNI服务器，sniip_ok.txt中的延迟值为配置中指定的各server_name的延迟的平均值。
 
-由于在初始化时读取了所有ip以便执行去重操作，所以会消耗大量的内存，对于需要扫描大量ip且机器性能不够强大的用户，请将'soft_mode'置为'true'。
+由于在初始化时读取了所有ip以便执行去重操作，所以会消耗大量的内存，对于需要扫描大量ip且机器性能不够强大的用户，请将`soft_mode`置为`true`。
 
 请将待测试的ip段放到sniip.txt文件，支持以下ip格式：
 
@@ -31,7 +31,8 @@ SUPPORT COMMANDS:
 	-h, --help                   help message
 	-a, --allhostname            lookup all hostname of ip, or lookup the first one by default
 	-r, --override               override settings
-
+	-m, --softmode               reduce memory usage
+	
 SUPPORT VARS:
 	-i, --snifile<=path>                put your ip ranges into this file
 	-o, --outputfile<=path>             output sni ip to this file
@@ -48,7 +49,9 @@ SUPPORT VARS:
 
 `"delay":1200` 扫描完成后，提取所有小于等于该延迟的ip
 
-`"server_name"` 用于测试SNI服务器的域名
+`"server_name"` 用于测试SNI服务器的域名，以逗号分隔
+
+`"soft_mode"` 边读取ip边扫描，适合需要扫描大量ip且内存较小的用户
 
 ## Wiki
 [Wiki](https://plumwine.me/go-sni-detector-usage-wiki/)

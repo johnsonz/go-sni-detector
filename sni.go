@@ -81,7 +81,7 @@ func main() {
 	}
 
 	if config.SoftMode {
-		totalips = make(chan string, config.Concurrency*10)
+		totalips = make(chan string, config.Concurrency)
 		go func() {
 			for _, ip := range lastOKIP {
 				totalips <- ip
@@ -285,14 +285,16 @@ func updateConfig(isOverride bool) {
 			fmt.Sprintf(`{
     "concurrency":%d,
     "timeout":%d,
+	"handshake_timeout":%d,
     "delay":%d,
     "server_name":[
         %s
     ],
-    "sort_by_delay":true,
-	"always_check_all_ip":false
-}`, config.Concurrency, config.Timeout, config.Delay,
-				fmt.Sprint("\"", strings.Join(config.ServerName, "\",\n        \""), "\"")), configFileName)
+    "sort_by_delay":%t,
+	"always_check_all_ip":%t,
+	"soft_mode":%t
+}`, config.Concurrency, config.Timeout, config.HandshakeTimeout, config.Delay,
+				fmt.Sprint("\"", strings.Join(config.ServerName, "\",\n        \""), "\""), config.SortByDelay, config.AlwaysCheck, config.SoftMode), configFileName)
 		fmt.Println("update sni.json successfully")
 	}
 }
@@ -359,6 +361,7 @@ SUPPORT COMMANDS:
 	-h, --help          %s
 	-a, --allhostname   %s
 	-r, --override      %s
+	-m, --softmode      %s
 
 SUPPORT VARS:
 	-i, --snifile           %s
@@ -369,7 +372,7 @@ SUPPORT VARS:
 	-ht, --handshaketimeout %s (default: %dms)
 	-d, --delay             %s (default: %dms)
 	-s, --servername        %s (default: %s)
-				`, helpMsg, allHostnameMsg, overrideMsg, sniFileMsg, outputFileMsg, jsonFileMsg, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, handshakeTimeoutMsg, config.HandshakeTimeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
+				`, helpMsg, allHostnameMsg, overrideMsg, softModeMsg, sniFileMsg, outputFileMsg, jsonFileMsg, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, handshakeTimeoutMsg, config.HandshakeTimeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
 	}
 	var (
 		outputAllHostname bool
@@ -382,6 +385,7 @@ SUPPORT VARS:
 		delay             int
 		serverNames       string
 		isOverride        bool
+		softMode          bool
 	)
 
 	flag.BoolVar(&outputAllHostname, "a", false, allHostnameMsg)
@@ -404,6 +408,8 @@ SUPPORT VARS:
 	flag.StringVar(&serverNames, "servername", strings.Join(config.ServerName, ", "), serverNameMsg)
 	flag.BoolVar(&isOverride, "r", false, overrideMsg)
 	flag.BoolVar(&isOverride, "override", false, overrideMsg)
+	flag.BoolVar(&softMode, "m", config.SoftMode, overrideMsg)
+	flag.BoolVar(&softMode, "softmode", config.SoftMode, overrideMsg)
 
 	flag.Set("logtostderr", "true")
 	flag.Parse()
@@ -428,6 +434,7 @@ SUPPORT VARS:
 	}
 	config.ServerName = sNs
 	config.IsOverride = isOverride
+	config.SoftMode = softMode
 }
 func getInputFromCommand() string {
 	reader := bufio.NewReader(os.Stdin)
