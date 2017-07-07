@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -237,7 +238,29 @@ Next:
 func parseConfig() {
 	conf, err := ioutil.ReadFile(configFileName)
 	checkErr("read config file error: ", err, Error)
-	err = json.Unmarshal(conf, &config)
+
+	var lines []string
+	for _, line := range strings.Split(strings.Replace(string(conf), "\r\n", "\n", -1), "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "//") && line != "" {
+			lines = append(lines, line)
+		}
+	}
+
+	var b bytes.Buffer
+	for i, line := range lines {
+		if len(lines)-1 > i {
+			nextLine := lines[i+1]
+			if nextLine == "]" || nextLine == "]," || nextLine == "}" || nextLine == "}," {
+				if strings.HasSuffix(line, ",") {
+					line = strings.TrimSuffix(line, ",")
+				}
+			}
+		}
+		b.WriteString(line)
+	}
+
+	err = json.Unmarshal(b.Bytes(), &config)
 	checkErr("parse config file error: ", err, Error)
 }
 
