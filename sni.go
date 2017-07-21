@@ -67,7 +67,7 @@ func init() {
 func main() {
 
 	usage()
-	fmt.Printf("%v\n\n", config)
+	showConfig()
 	time.Sleep(5 * time.Second)
 
 	createFile()
@@ -458,6 +458,21 @@ SUPPORT VARS:
 	config.ServerName = sNs
 	config.IsOverride = isOverride
 	config.SoftMode = softMode
+}
+func showConfig() {
+	fmt.Printf(`
+**********************************************************************
+  Concurrency:            %d
+  Timeout:                %dms
+  Handshake timeout:      %dms
+  Delay:                  %dms
+  Server name(s):         %s
+  Sort by delay:          %t
+  Always check all ip:    %t
+  Output all hostname:    %t
+  Soft mode:              %t
+**********************************************************************`, config.Concurrency, config.Timeout, config.HandshakeTimeout, config.Delay, strings.Join(config.ServerName, ", "), config.SortByDelay, config.AlwaysCheck, config.OutputAllHostname, config.SoftMode)
+	fmt.Println()
 }
 func getInputFromCommand() string {
 	reader := bufio.NewReader(os.Stdin)
