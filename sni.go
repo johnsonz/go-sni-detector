@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/golang/glog"
 )
 
@@ -294,7 +295,11 @@ func createFile() {
 func checkErr(messge string, err error, level int) {
 	if err != nil {
 		switch level {
-		case Info, Warning, Debug:
+		case Info:
+			color.Set(color.FgGreen)
+			defer color.Unset()
+			glog.Infoln(messge, err)
+		case Warning, Debug:
 			glog.Infoln(messge, err)
 		case Error:
 			glog.Fatalln(messge, err)
