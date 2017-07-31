@@ -1,16 +1,16 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -18,6 +18,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
+	"github.com/gorilla/websocket"
 )
 
 //SNI config
@@ -60,94 +61,33 @@ var certPool *x509.CertPool
 var tlsConfig *tls.Config
 var dialer net.Dialer
 var totalips chan string
+var okips chan string
+var upgrader = websocket.Upgrader{}
+var templates *template.Template
 
 func init() {
 	parseConfig()
 	loadCertPem()
+
+	templates = template.Must(template.New("templates").ParseGlob("./templates/*.gtpl"))
 }
 func main() {
 
-	usage()
-	showConfig()
-	time.Sleep(5 * time.Second)
-
 	createFile()
 
-	var ips []string
-	status := getStatus()
-	status = strings.Replace(strings.Replace(status, "\n", "", -1), "\r", "", -1)
+	http.HandleFunc("/", mainHandler)
+	http.HandleFunc("/scan", scanHandler)
 
-	var lastOKIP []string
-	for _, ip := range getLastOkIP() {
-		lastOKIP = append(lastOKIP, ip.Address)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	if err := http.ListenAndServe(":8888", nil); err != nil {
+		checkErr("ListenAndServe error: ", err, Error)
 	}
 
-	if config.SoftMode {
-		totalips = make(chan string, config.Concurrency)
-		go func() {
-			for _, ip := range lastOKIP {
-				totalips <- ip
-			}
-			getSNIIPQueue()
-			close(totalips)
-		}()
-
-		goto Queue
-	}
-
-	if config.AlwaysCheck {
-		ips = getSNIIP()
-	} else {
-		if status == "true" {
-			fmt.Println("所有IP已扫描，5秒钟后将执行重新扫描。")
-			for i := 1; i < 6; i++ {
-				time.Sleep(time.Millisecond * 1000)
-				fmt.Print("\r", i, "s")
-			}
-			err := os.Truncate(sniNoFileName, 0)
-			checkErr(fmt.Sprintf("truncate file %s error: ", sniNoFileName), err, Error)
-			ips = getSNIIP()
-		} else {
-			ips = getDifference(getSNIIP(), getLastNoIP())
-		}
-	}
-
-	ips = append(lastOKIP, ips...)
-Queue:
-	err := os.Truncate(sniResultFileName, 0)
-	checkErr(fmt.Sprintf("truncate file %s error: ", sniResultFileName), err, Error)
-	write2File("false", statusFileName)
-	jobs := make(chan string, config.Concurrency)
-	done := make(chan bool, config.Concurrency)
-
-	//check all sni ip begin
-	t0 := time.Now()
-	go func() {
-		if config.SoftMode {
-			for ip := range totalips {
-				jobs <- ip
-			}
-		} else {
-			for _, ip := range ips {
-				jobs <- ip
-			}
-		}
-		close(jobs)
-	}()
-	for ip := range jobs {
-		done <- true
-		go checkIP(ip, done)
-	}
-	for i := 0; i < cap(done); i++ {
-		done <- true
-	}
-	t1 := time.Now()
-	cost := int(t1.Sub(t0).Seconds())
-	rawipnum, jsonipnum := getJSONIP()
-	updateConfig(config.IsOverride)
-	write2File("true", statusFileName)
-	fmt.Printf("\ntime: %ds, ok ip count: %d, matched ip with delay(%dms) count: %d\n\n", cost, rawipnum, config.Delay, jsonipnum)
-	fmt.Scanln()
+	// rawipnum, jsonipnum := getJSONIP()
+	// updateConfig(config.IsOverride)
+	// write2File("true", statusFileName)
+	// fmt.Printf("\ntime: %ds, ok ip count: %d, matched ip with delay(%dms) count: %d\n\n", cost, rawipnum, config.Delay, jsonipnum)
+	// fmt.Scanln()
 }
 
 //Load cacert.pem
@@ -159,10 +99,11 @@ func loadCertPem() {
 		checkErr(fmt.Sprintf("load pem file %s error: ", certFileName), errors.New("load pem file error"), Error)
 	}
 }
-func checkIP(ip string, done chan bool) {
+func checkIP(ip string, done chan bool, conn *websocket.Conn, msgType int) {
 	defer func() {
 		<-done
 		appendIP2File(IP{Address: ip, Delay: 0, HostName: "-"}, sniNoFileName)
+		okips <- ip
 	}()
 	delays := make([]int, len(config.ServerName))
 	dialer = net.Dialer{
@@ -380,108 +321,102 @@ func write2File(str string, filename string) {
 	checkErr(fmt.Sprintf("write ip to file %s error: ", filename), err, Error)
 }
 
-func usage() {
-	flag.Usage = func() {
-		fmt.Printf(`
-Usage: go-sni-detector [COMMANDS] [VARS]
-
-SUPPORT COMMANDS:
-	-h, --help          %s
-	-a, --allhostname   %s
-	-r, --override      %s
-	-m, --softmode      %s
-
-SUPPORT VARS:
-	-i, --snifile           %s (default: %s)
-	-o, --outputfile        %s (default: %s)
-	-j, --jsonfile          %s (default: %s)
-	-c, --concurrency       %s (default: %d)
-	-t, --timeout           %s (default: %dms)
-	-ht, --handshaketimeout %s (default: %dms)
-	-d, --delay             %s (default: %dms)
-	-s, --servername        %s (default: %s)
-				`, helpMsg, allHostnameMsg, overrideMsg, softModeMsg, sniFileMsg, sniIPFileName, outputFileMsg, sniResultFileName, jsonFileMsg, sniJSONFileName, concurrencyMsg, config.Concurrency, timeoutMsg, config.Timeout, handshakeTimeoutMsg, config.HandshakeTimeout, delayMsg, config.Delay, serverNameMsg, strings.Join(config.ServerName, ", "))
-	}
-	var (
-		outputAllHostname bool
-		sniFile           string
-		outputFile        string
-		jsonFile          string
-		concurrency       int
-		timeout           int
-		handshaketimeout  int
-		delay             int
-		serverNames       string
-		isOverride        bool
-		softMode          bool
-	)
-
-	flag.BoolVar(&outputAllHostname, "a", false, allHostnameMsg)
-	flag.BoolVar(&outputAllHostname, "allhostname", false, allHostnameMsg)
-	flag.StringVar(&sniFile, "i", sniIPFileName, sniFileMsg)
-	flag.StringVar(&sniFile, "snifile", sniIPFileName, sniFileMsg)
-	flag.StringVar(&outputFile, "o", sniResultFileName, outputFileMsg)
-	flag.StringVar(&outputFile, "outputfile", sniResultFileName, outputFileMsg)
-	flag.StringVar(&jsonFile, "j", sniJSONFileName, jsonFileMsg)
-	flag.StringVar(&jsonFile, "jsonfile", sniJSONFileName, jsonFileMsg)
-	flag.IntVar(&concurrency, "c", config.Concurrency, concurrencyMsg)
-	flag.IntVar(&concurrency, "concurrency", config.Concurrency, concurrencyMsg)
-	flag.IntVar(&timeout, "t", config.Timeout, timeoutMsg)
-	flag.IntVar(&timeout, "timeout", config.Timeout, timeoutMsg)
-	flag.IntVar(&handshaketimeout, "ht", config.HandshakeTimeout, handshakeTimeoutMsg)
-	flag.IntVar(&handshaketimeout, "handshaketimeout", config.HandshakeTimeout, handshakeTimeoutMsg)
-	flag.IntVar(&delay, "d", config.Delay, delayMsg)
-	flag.IntVar(&delay, "delay", config.Delay, delayMsg)
-	flag.StringVar(&serverNames, "s", strings.Join(config.ServerName, ", "), serverNameMsg)
-	flag.StringVar(&serverNames, "servername", strings.Join(config.ServerName, ", "), serverNameMsg)
-	flag.BoolVar(&isOverride, "r", false, overrideMsg)
-	flag.BoolVar(&isOverride, "override", false, overrideMsg)
-	flag.BoolVar(&softMode, "m", config.SoftMode, overrideMsg)
-	flag.BoolVar(&softMode, "softmode", config.SoftMode, overrideMsg)
-
-	flag.Set("logtostderr", "true")
-	flag.Parse()
-
-	sniIPFileName = sniFile
-	sniResultFileName = outputFile
-	sniJSONFileName = jsonFile
-
-	if !isFileExist(sniFile) {
-		fmt.Printf("file %s not found.\n", sniIPFileName)
-		return
-	}
-
-	config.OutputAllHostname = outputAllHostname
-	config.Concurrency = concurrency
-	config.Timeout = timeout
-	config.HandshakeTimeout = handshaketimeout
-	config.Delay = delay
-	sNs := strings.Split(serverNames, ",")
-	for i, sn := range sNs {
-		sNs[i] = strings.TrimSpace(sn)
-	}
-	config.ServerName = sNs
-	config.IsOverride = isOverride
-	config.SoftMode = softMode
+func mainHandler(w http.ResponseWriter, r *http.Request) {
+	templates = template.Must(template.New("templates").ParseGlob("./templates/*.gtpl"))
+	templates.ExecuteTemplate(w, "main.gtpl", config)
 }
-func showConfig() {
-	fmt.Printf(`
-**********************************************************************
-  Concurrency:            %d
-  Timeout:                %dms
-  Handshake timeout:      %dms
-  Delay:                  %dms
-  Server name(s):         %s
-  Sort by delay:          %t
-  Always check all ip:    %t
-  Output all hostname:    %t
-  Soft mode:              %t
-**********************************************************************`, config.Concurrency, config.Timeout, config.HandshakeTimeout, config.Delay, strings.Join(config.ServerName, ", "), config.SortByDelay, config.AlwaysCheck, config.OutputAllHostname, config.SoftMode)
-	fmt.Println()
-}
-func getInputFromCommand() string {
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	input = strings.Replace(strings.Replace(input, "\n", "", -1), "\r", "", -1)
-	return input
+
+func scanHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	checkErr("websocket conn error: ", err, Error)
+	defer conn.Close()
+	mt, data, err := conn.ReadMessage()
+	checkErr("websocket read error: ", err, Warning)
+	content := string(data[:])
+	if content == "" || content == "nofile" {
+		var ips []string
+		status := getStatus()
+		status = strings.Replace(strings.Replace(status, "\n", "", -1), "\r", "", -1)
+
+		okips = make(chan string, config.Concurrency)
+
+		var lastOKIP []string
+		for _, ip := range getLastOkIP() {
+			lastOKIP = append(lastOKIP, ip.Address)
+		}
+
+		if config.SoftMode {
+			totalips = make(chan string, config.Concurrency)
+			go func() {
+				for _, ip := range lastOKIP {
+					totalips <- ip
+				}
+				getSNIIPQueue()
+				close(totalips)
+			}()
+
+			goto Queue
+		}
+
+		if config.AlwaysCheck {
+			ips = getSNIIP()
+		} else {
+			if status == "true" {
+				fmt.Println("所有IP已扫描，5秒钟后将执行重新扫描。")
+				for i := 1; i < 6; i++ {
+					time.Sleep(time.Millisecond * 1000)
+					fmt.Print("\r", i, "s")
+				}
+				err := os.Truncate(sniNoFileName, 0)
+				checkErr(fmt.Sprintf("truncate file %s error: ", sniNoFileName), err, Error)
+				ips = getSNIIP()
+			} else {
+				ips = getDifference(getSNIIP(), getLastNoIP())
+			}
+		}
+
+		ips = append(lastOKIP, ips...)
+	Queue:
+		err := os.Truncate(sniResultFileName, 0)
+		checkErr(fmt.Sprintf("truncate file %s error: ", sniResultFileName), err, Error)
+		write2File("false", statusFileName)
+		jobs := make(chan string, config.Concurrency)
+		done := make(chan bool, config.Concurrency)
+
+		//check all sni ip begin
+		t0 := time.Now()
+		go func() {
+			if config.SoftMode {
+				for ip := range totalips {
+					jobs <- ip
+				}
+			} else {
+				for _, ip := range ips {
+					jobs <- ip
+				}
+			}
+			close(jobs)
+		}()
+
+		go func() {
+			for ip := range okips {
+				conn.WriteMessage(mt, []byte(ip))
+			}
+		}()
+
+		for ip := range jobs {
+			done <- true
+			go checkIP(ip, done, conn, mt)
+		}
+
+		for i := 0; i < cap(done); i++ {
+			done <- true
+		}
+		close(okips)
+		t1 := time.Now()
+		cost := int(t1.Sub(t0).Seconds())
+		fmt.Println(cost, "ms")
+		conn.WriteMessage(mt, []byte("done"))
+
+	}
 }
