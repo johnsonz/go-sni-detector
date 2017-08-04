@@ -1,0 +1,13 @@
+{
+		"concurrency":100,
+		"timeout":8000,
+		"handshake_timeout":8000,
+		"delay":1200,
+		"server_name":[
+			"www.google.com",
+			"www.bing.com"
+		],
+		"sort_by_delay":true,
+		"always_check_all_ip":true,
+		"soft_mode":false
+	 }

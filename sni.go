@@ -44,8 +44,9 @@ type Result struct {
 }
 
 const (
-	configFileName string = "sni.json"
-	certFileName   string = "cacert.pem"
+	configFileName     string = "sni.json"
+	configUserFileName string = "sni.user.json"
+	certFileName       string = "cacert.pem"
 )
 
 var (
@@ -74,7 +75,7 @@ var upgrader = websocket.Upgrader{}
 var templates *template.Template
 
 func init() {
-	parseConfig()
+	config = parseConfig(configUserFileName)
 	loadCertPem()
 
 	templates = template.Must(template.New("templates").ParseGlob("./templates/*.gtpl"))
@@ -86,6 +87,7 @@ func main() {
 	http.HandleFunc("/", mainHandler)
 	http.HandleFunc("/scan", scanHandler)
 	http.HandleFunc("/config/update", updateConfigHandler)
+	http.HandleFunc("/config/reset", resetConfigHandler)
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	if err := http.ListenAndServe(":8888", nil); err != nil {
@@ -186,12 +188,12 @@ Next:
 }
 
 //Parse config file
-func parseConfig() {
-	conf, err := ioutil.ReadFile(configFileName)
+func parseConfig(filename string) (conf SNI) {
+	data, err := ioutil.ReadFile(filename)
 	checkErr("read config file error: ", err, Error)
 
 	var lines []string
-	for _, line := range strings.Split(strings.Replace(string(conf), "\r\n", "\n", -1), "\n") {
+	for _, line := range strings.Split(strings.Replace(string(data), "\r\n", "\n", -1), "\n") {
 		line = strings.TrimSpace(line)
 		if !strings.HasPrefix(line, "//") && line != "" {
 			lines = append(lines, line)
@@ -211,8 +213,9 @@ func parseConfig() {
 		b.WriteString(line)
 	}
 
-	err = json.Unmarshal(b.Bytes(), &config)
+	err = json.Unmarshal(b.Bytes(), &conf)
 	checkErr("parse config file error: ", err, Error)
+	return conf
 }
 
 func getStatus() string {
@@ -417,25 +420,25 @@ func updateConfigHandler(w http.ResponseWriter, r *http.Request) {
 	sort := r.FormValue("sort")
 	softmode := r.FormValue("softmode")
 
-	c, err := strconv.ParseInt(concurrency, 10, 0)
+	c, err := strconv.Atoi(concurrency)
 	if err != nil {
 		v, _ := json.Marshal(Result{false, "并发数只能为正整数"})
 		fmt.Fprint(w, string(v))
 		return
 	}
-	t, err := strconv.ParseInt(timeout, 10, 0)
+	t, err := strconv.Atoi(timeout)
 	if err != nil {
 		v, _ := json.Marshal(Result{false, "超时时间只能为正整数"})
 		fmt.Fprint(w, string(v))
 		return
 	}
-	ht, err := strconv.ParseInt(handshaketimeout, 10, 0)
+	ht, err := strconv.Atoi(handshaketimeout)
 	if err != nil {
 		v, _ := json.Marshal(Result{false, "握手时间只能为正整数"})
 		fmt.Fprint(w, string(v))
 		return
 	}
-	d, err := strconv.ParseInt(delay, 10, 0)
+	d, err := strconv.Atoi(delay)
 	if err != nil {
 		v, _ := json.Marshal(Result{false, "延迟只能为正整数"})
 		fmt.Fprint(w, string(v))
@@ -460,25 +463,43 @@ func updateConfigHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, string(v))
 		return
 	}
+	config = SNI{
+		Concurrency:      c,
+		Timeout:          t,
+		HandshakeTimeout: ht,
+		Delay:            d,
+		ServerName:       sn,
+		SortByDelay:      s,
+		SoftMode:         sm,
+	}
+	updateConfig(config)
+	v, _ := json.Marshal(Result{true, "update config successfully"})
+	fmt.Fprint(w, string(v))
+}
 
+func resetConfigHandler(w http.ResponseWriter, r *http.Request) {
+	conf := parseConfig(configFileName)
+	config = conf
+	updateConfig(config)
+	v, _ := json.Marshal(config)
+	fmt.Fprint(w, string(v))
+}
+
+func updateConfig(config SNI) {
 	write2File(
 		fmt.Sprintf(`{
-	    "concurrency":%d,
-	    "timeout":%d,
+		"concurrency":%d,
+		"timeout":%d,
 		"handshake_timeout":%d,
-	    "delay":%d,
-	    "server_name":[
-	        %s
-	    ],
-	    "sort_by_delay":%t,
+		"delay":%d,
+		"server_name":[
+			%s
+		],
+		"sort_by_delay":%t,
 		"always_check_all_ip":%t,
 		"soft_mode":%t
-	 }`, c, t, ht, d,
-			fmt.Sprint("\"", strings.Join(sn, "\",\n\t\t\t\""), "\""), s, config.AlwaysCheck, sm), configFileName)
-	v, _ := json.Marshal(Result{true, "update sni.json successfully"})
-	fmt.Fprint(w, string(v))
+	 }`, config.Concurrency, config.Timeout, config.HandshakeTimeout, config.Delay,
+			fmt.Sprint("\"", strings.Join(config.ServerName, "\",\n\t\t\t\""), "\""), config.SortByDelay, config.AlwaysCheck, config.SoftMode), configUserFileName)
 
-	fmt.Println("update sni.json successfully")
-	return
-
+	fmt.Println("update config successfully")
 }

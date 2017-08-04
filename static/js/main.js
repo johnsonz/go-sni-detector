@@ -76,7 +76,21 @@ $(document).ready(function(){
     });
 
     $("#btn-config-reset").click(function(evt){
+        $.getJSON("/config/reset", function(data) {
+            $("#concurrency").val(data.concurrency);
+            $("#timeout").val(data.timeout);
+            $("#handshake-timeout").val(data.handshake_timeout);
+            $("#delay").val(data.delay);
+            $("#server-name").val(data.server_name.join(" "));
+            $("#sort-by-delay").prop('checked', data.sort_by_delay);
+            $("#soft-mode").prop('checked', data.soft_mode);
 
+            $("#alert-config").html("重置成功！");
+            $("#alert-config").removeClass("alert-danger").addClass("alert-success");
+            $("#alert-config").css("display","block");
+            setTimeout(function(){
+                $("#alert-config").css("display","none");
+            },5000);
+        });
     });
-
 });
