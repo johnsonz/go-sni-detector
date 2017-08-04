@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title></title>
 
-    <link rel="stylesheet" type="text/css" href="/static/bootstrap-3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/bootstrap-3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/bootstrap-3.3.7/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="/static/css/main.css">
 
@@ -80,7 +80,7 @@
             </div>
             <div class="input-group">
                 <span class="input-group-addon" id="basic-addon3">ServerName</span>
-                <textarea type="text"  class="form-control" id="server-name" aria-describedby="basic-addon3" >{{ range $index,$sn:=.ServerName}}{{$sn}} {{end}}</textarea>
+                <textarea type="text"  class="form-control" id="server-name" aria-describedby="basic-addon3"   data-toggle="tooltip" data-placement="top" data-container="body" title="请以空格分隔">{{ range $index,$sn:=.ServerName}}{{$sn}} {{end}}</textarea>
 
             </div>
             <div class="input-group">

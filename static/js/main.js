@@ -3,6 +3,9 @@ $(document).ready(function(){
     var end =false;
     var ws;
     var index=1;
+
+    $('[data-toggle="tooltip"]').tooltip();
+
     $("#btn-start").click(function(){
         $(this).attr("disabled","disabled");
         $(this).val("正在扫描");
