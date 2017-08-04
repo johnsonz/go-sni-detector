@@ -48,6 +48,30 @@ $(document).ready(function(){
     });
 
     $("#btn-config-update").click(function(){
+        $.post("/config/update", {
+            concurrency:$.trim($("#concurrency").val()),
+            timeout:$.trim($("#timeout").val()),
+            handshaketimeout:$.trim($("#handshake-timeout").val()),
+            delay:$.trim($("#delay").val()),
+            servername:$.trim($("#server-name").val()),
+            sort:$.trim($("#sort-by-delay").is(":checked")),
+            softmode:$.trim($("#soft-mode").is(":checked")),
+        }, function(data, status) {
+            var result=$.parseJSON(data);
+        if (result.Status) {
+            $("#alert-config").html("更新成功！");
+            $("#alert-config").removeClass("alert-danger").addClass("alert-success");
+            $("#alert-config").css("display","block");
+
+            setTimeout(function(){
+                $("#alert-config").css("display","none");
+            },5000);
+        } else {
+            $("#alert-config").html("更新失败！"+result.Message);
+            $("#alert-config").removeClass("alert-success").addClass("alert-danger");
+            $("#alert-config").css("display","block");
+        }
+    });
 
     });
 

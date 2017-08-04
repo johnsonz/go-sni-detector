@@ -61,42 +61,43 @@
         <div class="form-inline" style="display:inline-table;width:25%">
             <div class="input-group">
                 <span class="input-group-addon" id="basic-addon3">并发数</span>
-                <input type="number" class="form-control" id="basic-url" aria-describedby="basic-addon3" value="{{.Concurrency}}">
+                <input type="number" class="form-control" id="concurrency" aria-describedby="basic-addon3" value="{{.Concurrency}}">
             </div>
             <div class="input-group">
                 <span class="input-group-addon" id="basic-addon3">超时时间</span>
-                <input type="number" class="form-control" id="basic-url" aria-describedby="basic-addon3" value="{{.Timeout}}">
+                <input type="number" class="form-control" id="timeout" aria-describedby="basic-addon3" value="{{.Timeout}}">
                 <div class="input-group-addon">ms</div>
             </div>
             <div class="input-group">
                 <span class="input-group-addon" id="basic-addon3">握手超时时间</span>
-                <input type="number" class="form-control" id="basic-url" aria-describedby="basic-addon3" value="{{.HandshakeTimeout}}">
+                <input type="number" class="form-control" id="handshake-timeout" aria-describedby="basic-addon3" value="{{.HandshakeTimeout}}">
                 <div class="input-group-addon">ms</div>
             </div>
             <div class="input-group">
                 <span class="input-group-addon" id="basic-addon3">延迟</span>
-                <input type="number" class="form-control" id="basic-url" aria-describedby="basic-addon3" value="{{.Delay}}">
+                <input type="number" class="form-control" id="delay" aria-describedby="basic-addon3" value="{{.Delay}}">
                 <div class="input-group-addon">ms</div>
             </div>
             <div class="input-group">
                 <span class="input-group-addon" id="basic-addon3">ServerName</span>
-                <textarea type="text"  class="form-control" id="basic-url" aria-describedby="basic-addon3" >{{ range $index,$sn:=.ServerName}}{{$sn}} {{end}}</textarea>
+                <textarea type="text"  class="form-control" id="server-name" aria-describedby="basic-addon3" >{{ range $index,$sn:=.ServerName}}{{$sn}} {{end}}</textarea>
 
             </div>
             <div class="input-group">
                 <span class="input-group-addon" id="basic-addon3">延迟排序</span> {{if .SortByDelay}}
-                <input type="checkbox" value="" checked style="vertical-align: middle;margin-left:10px">{{else}}
-                <input type="checkbox" value="" style="vertical-align: middle;margin-left:10px"> {{end}}
+                <input type="checkbox" id="sort-by-delay" checked style="vertical-align: middle;margin-left:10px">{{else}}
+                <input type="checkbox" id="sort-by-delay" style="vertical-align: middle;margin-left:10px"> {{end}}
             </div>
             <br />
             <div class="input-group">
                 <span class="input-group-addon" id="basic-addon3">soft模式</span> {{if .SoftMode}}
-                <input type="checkbox" value="" checked style="vertical-align: middle;margin-left:10px"> {{else}}
-                <input type="checkbox" value="" style="vertical-align: middle;margin-left:10px"> {{end}}
+                <input type="checkbox" id="soft-mode" checked style="vertical-align: middle;margin-left:10px"> {{else}}
+                <input type="checkbox" id="soft-mode" style="vertical-align: middle;margin-left:10px"> {{end}}
             </div>
             <br />
             <button type="submit" class="btn btn-primary" style="margin-top:10px;" id="btn-config-update">更新</button>
             <button type="submit" class="btn btn-primary" style="margin-left:20px;margin-top:10px;" id="btn-config-reset">重置为默认</button>
+            <div class="alert alert-success" role="alert" id="alert-config" style="margin-top:5px;display:none;">更新成功！</div>
         </div>
     </div>
 

@@ -12,7 +12,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,6 +35,12 @@ type SNI struct {
 	SoftMode          bool     `json:"soft_mode"`
 	OutputAllHostname bool
 	IsOverride        bool
+}
+
+//Result return messge to client
+type Result struct {
+	Status  bool
+	Message string
 }
 
 const (
@@ -77,6 +85,7 @@ func main() {
 
 	http.HandleFunc("/", mainHandler)
 	http.HandleFunc("/scan", scanHandler)
+	http.HandleFunc("/config/update", updateConfigHandler)
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	if err := http.ListenAndServe(":8888", nil); err != nil {
@@ -248,26 +257,6 @@ func checkErr(messge string, err error, level int) {
 	}
 }
 
-func updateConfig(isOverride bool) {
-	if isOverride {
-		write2File(
-			fmt.Sprintf(`{
-    "concurrency":%d,
-    "timeout":%d,
-	"handshake_timeout":%d,
-    "delay":%d,
-    "server_name":[
-        %s
-    ],
-    "sort_by_delay":%t,
-	"always_check_all_ip":%t,
-	"soft_mode":%t
-}`, config.Concurrency, config.Timeout, config.HandshakeTimeout, config.Delay,
-				fmt.Sprint("\"", strings.Join(config.ServerName, "\",\n        \""), "\""), config.SortByDelay, config.AlwaysCheck, config.SoftMode), configFileName)
-		fmt.Println("update sni.json successfully")
-	}
-}
-
 //Whether file exists.
 func isFileExist(file string) bool {
 	_, err := os.Stat(file)
@@ -417,6 +406,79 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		cost := int(t1.Sub(t0).Seconds())
 		fmt.Println(cost, "ms")
 		conn.WriteMessage(mt, []byte("done"))
-
 	}
+}
+func updateConfigHandler(w http.ResponseWriter, r *http.Request) {
+	concurrency := r.FormValue("concurrency")
+	timeout := r.FormValue("timeout")
+	handshaketimeout := r.FormValue("handshaketimeout")
+	delay := r.FormValue("delay")
+	servername := r.FormValue("servername")
+	sort := r.FormValue("sort")
+	softmode := r.FormValue("softmode")
+
+	c, err := strconv.ParseInt(concurrency, 10, 0)
+	if err != nil {
+		v, _ := json.Marshal(Result{false, "并发数只能为正整数"})
+		fmt.Fprint(w, string(v))
+		return
+	}
+	t, err := strconv.ParseInt(timeout, 10, 0)
+	if err != nil {
+		v, _ := json.Marshal(Result{false, "超时时间只能为正整数"})
+		fmt.Fprint(w, string(v))
+		return
+	}
+	ht, err := strconv.ParseInt(handshaketimeout, 10, 0)
+	if err != nil {
+		v, _ := json.Marshal(Result{false, "握手时间只能为正整数"})
+		fmt.Fprint(w, string(v))
+		return
+	}
+	d, err := strconv.ParseInt(delay, 10, 0)
+	if err != nil {
+		v, _ := json.Marshal(Result{false, "延迟只能为正整数"})
+		fmt.Fprint(w, string(v))
+		return
+	}
+	servername = regexp.MustCompile(`\s{1,}`).ReplaceAllString(servername, " ")
+	sn := strings.Split(servername, " ")
+	if len(sn) < 1 {
+		v, _ := json.Marshal(Result{false, "请填写Sever Name"})
+		fmt.Fprint(w, string(v))
+		return
+	}
+	s, err := strconv.ParseBool(sort)
+	if err != nil {
+		v, _ := json.Marshal(Result{false, "按延迟排序参数错误"})
+		fmt.Fprint(w, string(v))
+		return
+	}
+	sm, err := strconv.ParseBool(softmode)
+	if err != nil {
+		v, _ := json.Marshal(Result{false, "Soft模式参数错误"})
+		fmt.Fprint(w, string(v))
+		return
+	}
+
+	write2File(
+		fmt.Sprintf(`{
+	    "concurrency":%d,
+	    "timeout":%d,
+		"handshake_timeout":%d,
+	    "delay":%d,
+	    "server_name":[
+	        %s
+	    ],
+	    "sort_by_delay":%t,
+		"always_check_all_ip":%t,
+		"soft_mode":%t
+	 }`, c, t, ht, d,
+			fmt.Sprint("\"", strings.Join(sn, "\",\n\t\t\t\""), "\""), s, config.AlwaysCheck, sm), configFileName)
+	v, _ := json.Marshal(Result{true, "update sni.json successfully"})
+	fmt.Fprint(w, string(v))
+
+	fmt.Println("update sni.json successfully")
+	return
+
 }
