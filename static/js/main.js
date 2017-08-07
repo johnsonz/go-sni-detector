@@ -45,15 +45,16 @@ $(document).ready(function() {
             } else {
                 totalnumber = result.Number;
                 $("#alert-result-status").html("已扫描：" + totalnumber + "，有效：" + sninumber);
-                if (result.SNIIP) {
+                if (result.IsOkIIP) {
                     sninumber++;
-                    $("#t-ips tr:last").after("<tr><td>" + index + "</td><td>" + result.IPAddress + "</td><td>" + result.Delay + "</td><td>" + result.Hostname + "</td></tr>");
+                    $("#t-ips tr:last").after("<tr><td><input type='checkbox' class='cb-ip' id=''/></td><td>" + index + "</td><td class='td-ip-addr'>" + result.IPAddress + "</td><td class='td-ip-delay'>" + result.Delay + "</td><td class='td-ip-hostname'>" + result.Hostname + "</td></tr>");
                     index++;
                 }
             }
         }
         ws.onerror = function(evt) {
             console.log("error", evt.data);
+            alert("出错了，请尝试刷新页面或重新启动。")
         }
         ws.onclose = function() {
             console.log("close");
@@ -99,4 +100,48 @@ $(document).ready(function() {
             $("#alert-config").fadeOut(7000);
         });
     });
+
+    $("#btn-select-all").click(function() {
+        $(".cb-ip").prop('checked', true);
+    });
+
+    $("#btn-unselect-all").click(function() {
+        $(".cb-ip").prop('checked', false);
+    });
+
+    $("#btn-export-json").click(function() {
+        var data = "";
+        $('#t-ips tr').filter(':has(:checkbox:checked)').each(function() {
+            data += '"' + $(this).find(".td-ip-addr").html() + '",';
+        });
+        if (data.length > 0) {
+            data = data.substr(0, data.length - 1);
+        }
+        copyToClipboard(data);
+        $("#alert-copy-clipboard").html("已复制到剪贴板！");
+        $("#alert-copy-clipboard").show();
+        $("#alert-copy-clipboard").fadeOut(7000);
+    });
+
+    $("#btn-export-bar").click(function() {
+        var data = "";
+        $('#t-ips tr').filter(':has(:checkbox:checked)').each(function() {
+            data += $(this).find(".td-ip-addr").html() + '|';
+        });
+        if (data.length > 0) {
+            data = data.substr(0, data.length - 1);
+        }
+        copyToClipboard(data);
+        $("#alert-copy-clipboard").html("已复制到剪贴板！");
+        $("#alert-copy-clipboard").show();
+        $("#alert-copy-clipboard").fadeOut(7000);
+    });
 });
+
+function copyToClipboard(data) {
+    var temp = $("<input>");
+    $("body").append(temp);
+    temp.val(data).select();
+    document.execCommand("copy");
+    temp.remove();
+}

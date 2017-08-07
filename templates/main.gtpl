@@ -49,6 +49,7 @@
             <div style="max-height:500px;overflow:auto;">
                 <table class="table table-bordered table-striped" id="t-ips">
                     <tr>
+                        <th></th>
                         <th>#</th>
                         <th>IP</th>
                         <th>延迟</th>
@@ -56,9 +57,21 @@
                     </tr>
                 </table>
             </div>
+            <div style="padding-bottom: 10px;padding-right: 10px; display:inline-block">
+                <input type="button" class="btn btn-primary" value="全选" id="btn-select-all"/>
+                <input type="button" class="btn btn-primary" value="取消全选" id="btn-unselect-all"/>
+            </div>
+            <div class="btn-group">
+              <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">将所选导出为
+                <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu">
+                <li><a id="btn-export-json" href="javascript:void(0);">JSON格式到剪贴板</a></li>
+                <li><a id="btn-export-bar" href="javascript:void(0);">竖线分隔格式到剪贴板</a></li>
+              </ul>
+            </div>
             <div>
-                <input type="button" class="btn btn-primary" value="全部导出为JSON" id="btn-export-json"/>
-                <input type="button" class="btn btn-primary" value="全部导出为竖线分隔" id="btn-export-bar"/>
+                <div class="alert alert-success" role="alert" id="alert-copy-clipboard" style="margin-top:5px;display:none;"></div>
             </div>
         </div>
         <div class="form-inline" style="display:inline-table;width:25%">

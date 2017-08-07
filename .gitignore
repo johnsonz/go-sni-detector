@@ -24,4 +24,3 @@ _testmain.go
 *.test
 *.prof
 *.txt
-!sniip.txt

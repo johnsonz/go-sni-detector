@@ -116,7 +116,7 @@ func checkIP(ip string, done chan bool, conn *websocket.Conn, msgType int) {
 		<-done
 		appendIP2File(IP{Address: ip, Delay: 0, HostName: "-"}, sniNoFileName)
 		totalScanned++
-		scanResult <- ScanResult{ip, false, 0, "-", totalScanned}
+		scanResult <- ScanResult{ip, true, 0, "-", totalScanned}
 	}()
 	delays := make([]int, len(config.ServerName))
 	dialer = net.Dialer{
