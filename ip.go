@@ -130,12 +130,12 @@ func getSNIIP() []string {
 }
 
 //get all sni ip
-func getSNIIPQueue() {
+func getSNIIPQueue(ips *chan string) {
 	ipRanges := getSNIIPRange()
 	for _, ipRange := range ipRanges {
 		parsedips := parseSNIIPRange(ipRange)
 		for _, ip := range parsedips {
-			totalips <- ip
+			*ips <- ip
 		}
 	}
 }

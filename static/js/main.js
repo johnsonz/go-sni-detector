@@ -3,6 +3,8 @@ $(document).ready(function() {
     var end = false;
     var ws;
     var index = 1;
+    var sninumber = 0;
+    var totalnumber = 0;
 
     $('[data-toggle="tooltip"]').tooltip();
 
@@ -10,6 +12,8 @@ $(document).ready(function() {
         $(this).attr("disabled", "disabled");
         $(this).val("正在扫描");
         index = 1;
+        sninumber = 0;
+        totalnumber = 0;
         //if(!ws){return;}
         ws = new WebSocket("ws://127.0.0.1:8888/scan");
         ws.onopen = function(evt) {
@@ -31,13 +35,21 @@ $(document).ready(function() {
         ws.onmessage = function(evt) {
             var data = evt.data
             console.log(data);
-            if (data == "done") {
+            var result = $.parseJSON(data);
+            $("#alert-result-status").show();
+            if (result.Status == true) {
                 //ws.close();
                 $("#btn-start").removeAttr("disabled");
                 $("#btn-start").val("开始");
+                $("#alert-result-status").html("扫描完成，共扫描：" + totalnumber + "，有效：" + sninumber + "，耗时：" + result.Message);
             } else {
-                $("#t-ips tr:last").after("<tr><td>" + index + "</td><td>" + evt.data + "</td><td>" + evt.data + "</td><td>" + evt.data + "</td></tr>");
-                index++;
+                totalnumber = result.Number;
+                $("#alert-result-status").html("已扫描：" + totalnumber + "，有效：" + sninumber);
+                if (result.SNIIP) {
+                    sninumber++;
+                    $("#t-ips tr:last").after("<tr><td>" + index + "</td><td>" + result.IPAddress + "</td><td>" + result.Delay + "</td><td>" + result.Hostname + "</td></tr>");
+                    index++;
+                }
             }
         }
         ws.onerror = function(evt) {
@@ -63,16 +75,11 @@ $(document).ready(function() {
             var result = $.parseJSON(data);
             if (result.Status) {
                 $("#alert-config").html("更新成功！");
-                $("#alert-config").removeClass("alert-danger").addClass("alert-success");
-                $("#alert-config").css("display", "block");
-
-                setTimeout(function() {
-                    $("#alert-config").css("display", "none");
-                }, 5000);
+                $("#alert-config").removeClass("alert-danger").addClass("alert-success").show();
+                $("#alert-config").fadeOut(7000);
             } else {
                 $("#alert-config").html("更新失败！" + result.Message);
-                $("#alert-config").removeClass("alert-success").addClass("alert-danger");
-                $("#alert-config").css("display", "block");
+                $("#alert-config").removeClass("alert-success").addClass("alert-danger").show();
             }
         });
     });
@@ -88,11 +95,8 @@ $(document).ready(function() {
             $("#soft-mode").prop('checked', data.soft_mode);
 
             $("#alert-config").html("重置成功！");
-            $("#alert-config").removeClass("alert-danger").addClass("alert-success");
-            $("#alert-config").css("display", "block");
-            setTimeout(function() {
-                $("#alert-config").css("display", "none");
-            }, 5000);
+            $("#alert-config").removeClass("alert-danger").addClass("alert-success").show();
+            $("#alert-config").fadeOut(7000);
         });
     });
 });

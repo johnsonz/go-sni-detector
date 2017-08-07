@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -43,18 +44,23 @@ type Result struct {
 	Message string
 }
 
+//ScanResult return messge to client
+type ScanResult struct {
+	IPAddress string
+	IsOkIIP   bool
+	Delay     int
+	Hostname  string
+	Number    int
+}
+
 const (
 	configFileName     string = "sni.json"
 	configUserFileName string = "sni.user.json"
 	certFileName       string = "cacert.pem"
-)
-
-var (
-	sniIPFileName     = "sniip.txt"
-	sniResultFileName = "sniip_ok.txt"
-	sniNoFileName     = "sniip_no.txt"
-	sniJSONFileName   = "ip.txt"
-	statusFileName    = ".status"
+	sniIPFileName      string = "sniip.txt"
+	sniResultFileName  string = "sniip_ok.txt"
+	sniNoFileName      string = "sniip_no.txt"
+	sniJSONFileName    string = "ip.txt"
 )
 
 //custom log level
@@ -70,9 +76,10 @@ var certPool *x509.CertPool
 var tlsConfig *tls.Config
 var dialer net.Dialer
 var totalips chan string
-var okips chan string
+var scanResult chan ScanResult
 var upgrader = websocket.Upgrader{}
 var templates *template.Template
+var totalScanned int
 
 func init() {
 	config = parseConfig(configUserFileName)
@@ -93,12 +100,6 @@ func main() {
 	if err := http.ListenAndServe(":8888", nil); err != nil {
 		checkErr("ListenAndServe error: ", err, Error)
 	}
-
-	// rawipnum, jsonipnum := getJSONIP()
-	// updateConfig(config.IsOverride)
-	// write2File("true", statusFileName)
-	// fmt.Printf("\ntime: %ds, ok ip count: %d, matched ip with delay(%dms) count: %d\n\n", cost, rawipnum, config.Delay, jsonipnum)
-	// fmt.Scanln()
 }
 
 //Load cacert.pem
@@ -114,7 +115,8 @@ func checkIP(ip string, done chan bool, conn *websocket.Conn, msgType int) {
 	defer func() {
 		<-done
 		appendIP2File(IP{Address: ip, Delay: 0, HostName: "-"}, sniNoFileName)
-		okips <- ip
+		totalScanned++
+		scanResult <- ScanResult{ip, false, 0, "-", totalScanned}
 	}()
 	delays := make([]int, len(config.ServerName))
 	dialer = net.Dialer{
@@ -185,6 +187,8 @@ Next:
 	checkErr(fmt.Sprintf("%s %dms %s, sni ip, recorded.", ip, delay, hostname), errors.New(""), Info)
 
 	appendIP2File(IP{Address: ip, Delay: delay, HostName: hostname}, sniResultFileName)
+	totalScanned++
+	scanResult <- ScanResult{ip, true, delay, hostname, totalScanned}
 }
 
 //Parse config file
@@ -218,12 +222,6 @@ func parseConfig(filename string) (conf SNI) {
 	return conf
 }
 
-func getStatus() string {
-	status, err := ioutil.ReadFile(statusFileName)
-	checkErr(fmt.Sprintf("read file %s error: ", statusFileName), err, Error)
-	return string(status[:])
-}
-
 //Create files if they donnot exist, or truncate them.
 func createFile() {
 	if !isFileExist(sniResultFileName) {
@@ -237,10 +235,6 @@ func createFile() {
 	if !isFileExist(sniNoFileName) {
 		_, err := os.Create(sniNoFileName)
 		checkErr(fmt.Sprintf("create file %s error: ", sniNoFileName), err, Error)
-	}
-	if !isFileExist(statusFileName) {
-		_, err := os.Create(statusFileName)
-		checkErr(fmt.Sprintf("create file %s error: ", statusFileName), err, Error)
 	}
 }
 
@@ -307,9 +301,7 @@ func appendIP2File(ip IP, filename string) {
 
 //write ip to related file
 func write2File(str string, filename string) {
-	err := os.Truncate(filename, 0)
-	checkErr(fmt.Sprintf("truncate file %s error: ", filename), err, Error)
-	err = ioutil.WriteFile(filename, []byte(str), 0755)
+	err := ioutil.WriteFile(filename, []byte(str), 0755)
 	checkErr(fmt.Sprintf("write ip to file %s error: ", filename), err, Error)
 }
 
@@ -319,59 +311,33 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func scanHandler(w http.ResponseWriter, r *http.Request) {
+	totalScanned = 0
 	conn, err := upgrader.Upgrade(w, r, nil)
 	checkErr("websocket conn error: ", err, Error)
 	defer conn.Close()
 	mt, data, err := conn.ReadMessage()
 	checkErr("websocket read error: ", err, Warning)
 	content := string(data[:])
+	fmt.Println("content from client: ", content)
 	if content == "" || content == "nofile" {
 		var ips []string
-		status := getStatus()
-		status = strings.Replace(strings.Replace(status, "\n", "", -1), "\r", "", -1)
-
-		okips = make(chan string, config.Concurrency)
-
-		var lastOKIP []string
-		for _, ip := range getLastOkIP() {
-			lastOKIP = append(lastOKIP, ip.Address)
-		}
+		scanResult = make(chan ScanResult, config.Concurrency)
 
 		if config.SoftMode {
 			totalips = make(chan string, config.Concurrency)
 			go func() {
-				for _, ip := range lastOKIP {
-					totalips <- ip
-				}
-				getSNIIPQueue()
+				getSNIIPQueue(&totalips)
 				close(totalips)
 			}()
-
-			goto Queue
-		}
-
-		if config.AlwaysCheck {
-			ips = getSNIIP()
 		} else {
-			if status == "true" {
-				fmt.Println("所有IP已扫描，5秒钟后将执行重新扫描。")
-				for i := 1; i < 6; i++ {
-					time.Sleep(time.Millisecond * 1000)
-					fmt.Print("\r", i, "s")
-				}
-				err := os.Truncate(sniNoFileName, 0)
-				checkErr(fmt.Sprintf("truncate file %s error: ", sniNoFileName), err, Error)
-				ips = getSNIIP()
-			} else {
-				ips = getDifference(getSNIIP(), getLastNoIP())
-			}
+			ips = getSNIIP()
+			err = os.Truncate(sniNoFileName, 0)
+			checkErr(fmt.Sprintf("truncate file %s error: ", sniNoFileName), err, Error)
+			ips = getSNIIP()
+			ips = getDifference(getSNIIP(), getLastNoIP())
 		}
-
-		ips = append(lastOKIP, ips...)
-	Queue:
-		err := os.Truncate(sniResultFileName, 0)
+		err = os.Truncate(sniResultFileName, 0)
 		checkErr(fmt.Sprintf("truncate file %s error: ", sniResultFileName), err, Error)
-		write2File("false", statusFileName)
 		jobs := make(chan string, config.Concurrency)
 		done := make(chan bool, config.Concurrency)
 
@@ -391,8 +357,9 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		go func() {
-			for ip := range okips {
-				conn.WriteMessage(mt, []byte(ip))
+			for r := range scanResult {
+				v, _ := json.Marshal(r)
+				conn.WriteMessage(mt, v)
 			}
 		}()
 
@@ -404,11 +371,27 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		for i := 0; i < cap(done); i++ {
 			done <- true
 		}
-		close(okips)
+		//close(okips)
 		t1 := time.Now()
 		cost := int(t1.Sub(t0).Seconds())
-		fmt.Println(cost, "ms")
-		conn.WriteMessage(mt, []byte("done"))
+		var msg = ""
+		m := math.Mod(float64(cost), 60)
+		msg += strconv.FormatFloat(m, 'f', 0, 64) + "秒"
+		if f1 := cost / 60; f1 > 0 {
+			m := math.Mod(float64(f1), 60)
+			msg = strconv.FormatFloat(m, 'f', 0, 64) + "分" + msg
+			if f2 := f1 / 60; f2 > 0 {
+				m := math.Mod(float64(f2), 60)
+				msg = strconv.FormatFloat(m, 'f', 0, 64) + "时" + msg
+				if f3 := f2 / 24; f3 > 0 {
+					m := math.Mod(float64(f3), 24)
+					msg = strconv.FormatFloat(m, 'f', 0, 64) + "天" + msg
+				}
+			}
+		}
+		fmt.Println(msg)
+		v, _ := json.Marshal(Result{true, msg})
+		conn.WriteMessage(mt, v)
 	}
 }
 func updateConfigHandler(w http.ResponseWriter, r *http.Request) {

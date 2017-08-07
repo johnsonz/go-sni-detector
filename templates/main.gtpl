@@ -43,6 +43,9 @@
                 <input type="file" id="file" name="sni-file" style="display:inline;">
                 <input type="button" style="" class="btn btn-primary" id="btn-start" value="开始"></input>
             </div>
+            <div>
+                <div class="alert alert-success" role="alert" id="alert-result-status" style="margin-top:5px;display:none;"></div>
+            </div>
             <div style="max-height:500px;overflow:auto;">
                 <table class="table table-bordered table-striped" id="t-ips">
                     <tr>
