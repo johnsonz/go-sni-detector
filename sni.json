@@ -8,5 +8,5 @@
 			"www.bing.com"
 	    ],
 	    "sort_by_delay":true,
-		"soft_mode":false
+		"soft_mode":true
 	 }

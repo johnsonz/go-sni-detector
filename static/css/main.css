@@ -1,3 +1,6 @@
 .navbar-static-top {
   margin-bottom: 19px;
 }
+#t-ips tr td, #t-ips tr th{
+    text-align: center;
+}

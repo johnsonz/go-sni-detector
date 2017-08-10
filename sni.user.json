@@ -1,5 +1,5 @@
 {
-		"concurrency":10,
+		"concurrency":66,
 		"timeout":8000,
 		"handshake_timeout":8000,
 		"delay":1200,
@@ -8,6 +8,5 @@
 			"www.bing.com"
 		],
 		"sort_by_delay":true,
-		"always_check_all_ip":false,
-		"soft_mode":false
+		"soft_mode":true
 	 }

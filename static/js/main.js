@@ -9,58 +9,7 @@ $(document).ready(function() {
     $('[data-toggle="tooltip"]').tooltip();
 
     $("#btn-start").click(function() {
-        $(this).attr("disabled", "disabled");
-        $(this).val("正在扫描");
-        index = 1;
-        sninumber = 0;
-        totalnumber = 0;
-        //if(!ws){return;}
-        ws = new WebSocket("ws://127.0.0.1:8888/scan");
-        ws.onopen = function(evt) {
-            var file = document.getElementById('file').files[0];
-            if (file == undefined || file == '' || file == null) {
-                ws.send("nofile");
-            } else {
-                var reader = new FileReader();
-                var rawData = new ArrayBuffer();
-                reader.onload = function(e) {
-                    rawData = e.target.result;
-                    ws.send(rawData);
-                }
-                reader.readAsArrayBuffer(file);
-            }
-
-            $("#t-ips tr").nextAll().remove();
-        }
-        ws.onmessage = function(evt) {
-            var data = evt.data
-            console.log(data);
-            var result = $.parseJSON(data);
-            $("#alert-result-status").show();
-            if (result.Status == true) {
-                //ws.close();
-                $("#btn-start").removeAttr("disabled");
-                $("#btn-start").val("开始");
-                $("#alert-result-status").html("扫描完成，共扫描：" + totalnumber + "，有效：" + sninumber + "，耗时：" + result.Message);
-            } else {
-                totalnumber = result.Number;
-                $("#alert-result-status").html("已扫描：" + totalnumber + "，有效：" + sninumber);
-                if (result.IsOkIIP) {
-                    sninumber++;
-                    $("#t-ips tr:last").after("<tr><td><input type='checkbox' class='cb-ip' id=''/></td><td>" + index + "</td><td class='td-ip-addr'>" + result.IPAddress + "</td><td class='td-ip-delay'>" + result.Delay + "</td><td class='td-ip-hostname'>" + result.Hostname + "</td></tr>");
-                    index++;
-                }
-            }
-        }
-        ws.onerror = function(evt) {
-            console.log("error", evt.data);
-            alert("出错了，请尝试刷新页面或重新启动。")
-        }
-        ws.onclose = function() {
-            console.log("close");
-            $("#btn-start").removeAttr("disabled");
-            $("#btn-start").val("开始");
-        }
+        uploadFile();
     });
 
     $("#btn-config-update").click(function() {
@@ -144,4 +93,89 @@ function copyToClipboard(data) {
     temp.val(data).select();
     document.execCommand("copy");
     temp.remove();
+}
+
+function scan() {
+    $("#btn-start").attr("disabled", "disabled");
+    $("#btn-start").val("正在扫描");
+    index = 1;
+    sninumber = 0;
+    totalnumber = 0;
+    //if(!ws){return;}
+    ws = new WebSocket("ws://127.0.0.1:8888/scan");
+    ws.onopen = function(evt) {
+        ws.send("start");
+        $("#t-ips tr").nextAll().remove();
+    }
+    ws.onmessage = function(evt) {
+        var data = evt.data
+        console.log(data);
+        var result = $.parseJSON(data);
+        $("#alert-result-status").show();
+        if (result.Status == true) {
+            //ws.close();
+            $("#btn-start").removeAttr("disabled");
+            $("#btn-start").val("开始");
+            $("#alert-result-status").html("扫描完成，共扫描：" + totalnumber + "，有效：" + sninumber + "，耗时：" + result.Message);
+        } else {
+            totalnumber = result.Number;
+            if (result.IsOkIIP) {
+                sninumber++;
+                $("#t-ips tr:last").after("<tr><td><input type='checkbox' class='cb-ip' id=''/></td><td>" + index + "</td><td class='td-ip-addr'>" + result.IPAddress + "</td><td class='td-ip-delay'>" + result.Delay + "</td><td class='td-ip-hostname'>" + result.Hostname + "</td></tr>");
+                index++;
+            }
+            $("#alert-result-status").html("已扫描：" + totalnumber + "，有效：" + sninumber);
+        }
+    }
+    ws.onerror = function(evt) {
+        console.log("error", evt.data);
+        alert("出错了，请尝试刷新页面或重新启动。")
+    }
+    ws.onclose = function() {
+        console.log("close");
+        $("#btn-start").removeAttr("disabled");
+        $("#btn-start").val("开始");
+    }
+}
+
+function uploadFile() {
+    $("#btn-start").val("正在处理数据");
+    var data = new FormData();
+    data.append('file', $('#file')[0].files[0]);
+    $.ajax({
+        url: '/file/upload',
+        async: true,
+        type: 'POST',
+        cache: false,
+        data: data,
+        processData: false,
+        contentType: false,
+    }).done(function(res) {
+        scan();
+    }).fail(function(res) {
+        console.log("处理数据错误");
+    });
+}
+
+function sort() {
+    var ips = new Array();
+    $('#t-ips tr').each(function() {
+        var addr = $(this).find(".td-ip-addr").html();
+        var delay = $(this).find(".td-ip-delay").html();
+        var hostname = $(this).find(".td-ip-hostname").html();
+        if (addr == undefined && delay == undefined && hostname == undefined) {
+            return true;
+        }
+        ips.push(new Result(addr, parseInt(delay, 10), hostname));
+    });
+
+    ips.sort(function(a, b) {
+        return a.delay < b.delay ? 1 : -1;
+    });
+}
+
+function Result(addr, delay, hostname) {
+    this.addr = addr;
+    this.delay = delay;
+    this.hostname = hostname;
 }

@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fatih/color"
@@ -54,13 +55,18 @@ type ScanResult struct {
 }
 
 const (
-	configFileName     string = "sni.json"
-	configUserFileName string = "sni.user.json"
-	certFileName       string = "cacert.pem"
-	sniIPFileName      string = "sniip.txt"
-	sniResultFileName  string = "sniip_ok.txt"
-	sniNoFileName      string = "sniip_no.txt"
-	sniJSONFileName    string = "ip.txt"
+	configFileName      string = "sni.json"
+	configUserFileName  string = "sni.user.json"
+	certFileName        string = "cacert.pem"
+	sniIPSourceFileName string = "sniip.txt"
+	sniIPTempFileName   string = "sniip_temp.txt"
+	sniResultFileName   string = "sniip_ok.txt"
+	sniNoFileName       string = "sniip_no.txt"
+	sniJSONFileName     string = "ip.txt"
+)
+
+var (
+	sniIPFileName = "sniip.txt"
 )
 
 //custom log level
@@ -95,6 +101,7 @@ func main() {
 	http.HandleFunc("/scan", scanHandler)
 	http.HandleFunc("/config/update", updateConfigHandler)
 	http.HandleFunc("/config/reset", resetConfigHandler)
+	http.HandleFunc("/file/upload", fileUploadHandler)
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	if err := http.ListenAndServe(":8888", nil); err != nil {
@@ -319,7 +326,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 	checkErr("websocket read error: ", err, Warning)
 	content := string(data[:])
 	fmt.Println("content from client: ", content)
-	if content == "" || content == "nofile" {
+	if content == "start" {
 		var ips []string
 		scanResult = make(chan ScanResult, config.Concurrency)
 
@@ -355,8 +362,11 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			close(jobs)
 		}()
+		var wg sync.WaitGroup
+		wg.Add(1)
 
 		go func() {
+			// defer wg.Done()
 			for r := range scanResult {
 				v, _ := json.Marshal(r)
 				conn.WriteMessage(mt, v)
@@ -371,7 +381,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		for i := 0; i < cap(done); i++ {
 			done <- true
 		}
-		//close(okips)
+		// close(scanResult)
 		t1 := time.Now()
 		cost := int(t1.Sub(t0).Seconds())
 		var msg = ""
@@ -390,6 +400,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		fmt.Println(msg)
+		// wg.Wait()
 		v, _ := json.Marshal(Result{true, msg})
 		conn.WriteMessage(mt, v)
 	}
@@ -479,10 +490,33 @@ func updateConfig(config SNI) {
 			%s
 		],
 		"sort_by_delay":%t,
-		"always_check_all_ip":%t,
 		"soft_mode":%t
 	 }`, config.Concurrency, config.Timeout, config.HandshakeTimeout, config.Delay,
-			fmt.Sprint("\"", strings.Join(config.ServerName, "\",\n\t\t\t\""), "\""), config.SortByDelay, config.AlwaysCheck, config.SoftMode), configUserFileName)
+			fmt.Sprint("\"", strings.Join(config.ServerName, "\",\n\t\t\t\""), "\""), config.SortByDelay, config.SoftMode), configUserFileName)
 
 	fmt.Println("update config successfully")
+}
+
+func fileUploadHandler(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	checkErr("parse form error: ", err, Error)
+	sniIPFileName = sniIPSourceFileName
+	file, _, err := r.FormFile("file")
+	var data []byte
+	switch err {
+	case nil:
+		data, err = ioutil.ReadAll(file)
+		if err != nil {
+			checkErr("read file error: ", err, Error)
+		}
+		sniIPFileName = sniIPTempFileName
+		err = ioutil.WriteFile(sniIPTempFileName, data, 0755)
+		checkErr("write data to temp file error: ", err, Error)
+	case http.ErrMissingFile:
+
+		checkErr("no file uploaded error: ", errors.New(""), Warning)
+	default:
+		checkErr("upload file error: ", errors.New(""), Error)
+	}
+
 }
