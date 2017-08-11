@@ -136,6 +136,14 @@
     </div>
     <div class="container container-help">
 
+        <ul>
+            <li>
+                请选择包含ip段的文件，如果未选择，则使用内置的文件进行扫描。
+            </li>
+            <li>
+
+            </li>
+        </ul>
     </div>
     <script src="/static/js/jquery-3.2.1.min.js"></script>
     <script src="/static/bootstrap-3.3.7/js/bootstrap.min.js"></script>

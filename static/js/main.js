@@ -46,6 +46,7 @@ $(document).ready(function() {
         }, function(data, status) {
             var result = $.parseJSON(data);
             if (result.Status) {
+                $("#btn-select-delay").val("全选延迟小于" + $.trim($("#delay").val()) + "的");
                 $("#alert-config").html("更新成功！");
                 $("#alert-config").removeClass("alert-danger").addClass("alert-success").show().fadeTo(5000, 1).hide("fast");
             } else {
@@ -64,6 +65,7 @@ $(document).ready(function() {
             $("#server-name").val(data.server_name.join(" "));
             $("#sort-by-delay").prop('checked', data.sort_by_delay);
             $("#soft-mode").prop('checked', data.soft_mode);
+            $("#btn-select-delay").val("全选延迟小于" + data.delay + "的");
 
             $("#alert-config").html("重置成功！");
             $("#alert-config").removeClass("alert-danger").addClass("alert-success").show().fadeTo(5000, 1).hide("fast");
