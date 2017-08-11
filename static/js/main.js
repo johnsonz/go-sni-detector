@@ -25,8 +25,7 @@ $(document).ready(function() {
             var result = $.parseJSON(data);
             if (result.Status) {
                 $("#alert-config").html("更新成功！");
-                $("#alert-config").removeClass("alert-danger").addClass("alert-success").show();
-                $("#alert-config").fadeOut(7000);
+                $("#alert-config").removeClass("alert-danger").addClass("alert-success").show().fadeTo(5000, 1).hide("fast");
             } else {
                 $("#alert-config").html("更新失败！" + result.Message);
                 $("#alert-config").removeClass("alert-success").addClass("alert-danger").show();
@@ -45,8 +44,7 @@ $(document).ready(function() {
             $("#soft-mode").prop('checked', data.soft_mode);
 
             $("#alert-config").html("重置成功！");
-            $("#alert-config").removeClass("alert-danger").addClass("alert-success").show();
-            $("#alert-config").fadeOut(7000);
+            $("#alert-config").removeClass("alert-danger").addClass("alert-success").show().fadeTo(5000, 1).hide("fast");
         });
     });
 
@@ -61,6 +59,9 @@ $(document).ready(function() {
     $("#btn-export-json").click(function() {
         var data = "";
         $('#t-ips tr').filter(':has(:checkbox:checked)').each(function() {
+            if ($(this).find(".td-ip-addr").html() == undefined) {
+                return true;
+            }
             data += '"' + $(this).find(".td-ip-addr").html() + '",';
         });
         if (data.length > 0) {
@@ -68,13 +69,15 @@ $(document).ready(function() {
         }
         copyToClipboard(data);
         $("#alert-copy-clipboard").html("已复制到剪贴板！");
-        $("#alert-copy-clipboard").show();
-        $("#alert-copy-clipboard").fadeOut(7000);
+        $("#alert-copy-clipboard").show().fadeTo(5000, 1).hide("fast");
     });
 
     $("#btn-export-bar").click(function() {
         var data = "";
         $('#t-ips tr').filter(':has(:checkbox:checked)').each(function() {
+            if ($(this).find(".td-ip-addr").html() == undefined) {
+                return true;
+            }
             data += $(this).find(".td-ip-addr").html() + '|';
         });
         if (data.length > 0) {
@@ -82,8 +85,10 @@ $(document).ready(function() {
         }
         copyToClipboard(data);
         $("#alert-copy-clipboard").html("已复制到剪贴板！");
-        $("#alert-copy-clipboard").show();
-        $("#alert-copy-clipboard").fadeOut(7000);
+        $("#alert-copy-clipboard").show().fadeTo(5000, 1).hide("fast");
+    });
+    $("#cb-select-all").click(function() {
+        $(".cb-ip").prop('checked', $(this).is(":checked"));
     });
 });
 
@@ -102,7 +107,7 @@ function scan() {
     sninumber = 0;
     totalnumber = 0;
     //if(!ws){return;}
-    ws = new WebSocket("ws://127.0.0.1:8888/scan");
+    ws = new WebSocket("ws://127.0.0.1:8887/scan");
     ws.onopen = function(evt) {
         ws.send("start");
         $("#t-ips tr").nextAll().remove();
@@ -114,9 +119,13 @@ function scan() {
         $("#alert-result-status").show();
         if (result.Status == true) {
             //ws.close();
+            $("#alert-result-status").html("扫描完成，共扫描：" + totalnumber + "，有效：" + sninumber + "，耗时：" + result.Message);
+            if ($("#sort-by-delay").is(":checked") == true) {
+                $("#btn-start").val("开始排序");
+                sort();
+            }
             $("#btn-start").removeAttr("disabled");
             $("#btn-start").val("开始");
-            $("#alert-result-status").html("扫描完成，共扫描：" + totalnumber + "，有效：" + sninumber + "，耗时：" + result.Message);
         } else {
             totalnumber = result.Number;
             if (result.IsOkIIP) {
@@ -129,7 +138,7 @@ function scan() {
     }
     ws.onerror = function(evt) {
         console.log("error", evt.data);
-        alert("出错了，请尝试刷新页面或重新启动。")
+        $("#alert-error").html("出现错误，请尝试刷新浏览器或重启程序！").show();
     }
     ws.onclose = function() {
         console.log("close");
@@ -140,6 +149,7 @@ function scan() {
 
 function uploadFile() {
     $("#btn-start").val("正在处理数据");
+    $("#btn-start").attr("disabled", "disabled");
     var data = new FormData();
     data.append('file', $('#file')[0].files[0]);
     $.ajax({
@@ -153,7 +163,7 @@ function uploadFile() {
     }).done(function(res) {
         scan();
     }).fail(function(res) {
-        console.log("处理数据错误");
+        $("#alert-error").html("处理数据时出现错误，请尝试刷新浏览器或重启程序！").show();
     });
 }
 
@@ -172,6 +182,11 @@ function sort() {
     ips.sort(function(a, b) {
         return a.delay < b.delay ? 1 : -1;
     });
+
+    $("#t-ips tr").nextAll().remove();
+    for (var i = 0; i < ips.length; i++) {
+        $("#t-ips tr:last").after("<tr><td><input type='checkbox' class='cb-ip' id=''/></td><td>" + (i + 1) + "</td><td class='td-ip-addr'>" + ips[i].addr + "</td><td class='td-ip-delay'>" + ips[i].delay + "</td><td class='td-ip-hostname'>" + ips[i].hostname + "</td></tr>");
+    }
 }
 
 function Result(addr, delay, hostname) {

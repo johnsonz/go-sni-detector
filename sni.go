@@ -102,9 +102,9 @@ func main() {
 	http.HandleFunc("/config/update", updateConfigHandler)
 	http.HandleFunc("/config/reset", resetConfigHandler)
 	http.HandleFunc("/file/upload", fileUploadHandler)
-
+	open("http://127.0.0.1:8887")
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	if err := http.ListenAndServe(":8888", nil); err != nil {
+	if err := http.ListenAndServe(":8887", nil); err != nil {
 		checkErr("ListenAndServe error: ", err, Error)
 	}
 }
@@ -120,10 +120,10 @@ func loadCertPem() {
 }
 func checkIP(ip string, done chan bool, conn *websocket.Conn, msgType int) {
 	defer func() {
-		<-done
 		appendIP2File(IP{Address: ip, Delay: 0, HostName: "-"}, sniNoFileName)
 		totalScanned++
-		scanResult <- ScanResult{ip, true, 0, "-", totalScanned}
+		scanResult <- ScanResult{ip, false, 0, "-", totalScanned}
+		<-done
 	}()
 	delays := make([]int, len(config.ServerName))
 	dialer = net.Dialer{
@@ -231,14 +231,10 @@ func parseConfig(filename string) (conf SNI) {
 
 //Create files if they donnot exist, or truncate them.
 func createFile() {
-	if !isFileExist(sniResultFileName) {
-		_, err := os.Create(sniResultFileName)
-		checkErr(fmt.Sprintf("create file %s error: ", sniResultFileName), err, Error)
-	}
-	if !isFileExist(sniJSONFileName) {
-		_, err := os.Create(sniJSONFileName)
-		checkErr(fmt.Sprintf("create file %s error: ", sniJSONFileName), err, Error)
-	}
+	_, err := os.Create(sniResultFileName)
+	checkErr(fmt.Sprintf("create file %s error: ", sniResultFileName), err, Error)
+	_, err = os.Create(sniJSONFileName)
+	checkErr(fmt.Sprintf("create file %s error: ", sniJSONFileName), err, Error)
 	if !isFileExist(sniNoFileName) {
 		_, err := os.Create(sniNoFileName)
 		checkErr(fmt.Sprintf("create file %s error: ", sniNoFileName), err, Error)
@@ -269,6 +265,7 @@ func isFileExist(file string) bool {
 	}
 	return true
 }
+
 func getJSONIP() (rawipnum, jsonipnum int) {
 	var rawiplist, jsoniplist []string
 	okIPs := getLastOkIP()
@@ -318,14 +315,14 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func scanHandler(w http.ResponseWriter, r *http.Request) {
-	totalScanned = 0
 	conn, err := upgrader.Upgrade(w, r, nil)
 	checkErr("websocket conn error: ", err, Error)
 	defer conn.Close()
+
+	totalScanned = 0
 	mt, data, err := conn.ReadMessage()
-	checkErr("websocket read error: ", err, Warning)
+	checkErr("websocket read message error: ", err, Warning)
 	content := string(data[:])
-	fmt.Println("content from client: ", content)
 	if content == "start" {
 		var ips []string
 		scanResult = make(chan ScanResult, config.Concurrency)
@@ -337,14 +334,9 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 				close(totalips)
 			}()
 		} else {
-			ips = getSNIIP()
-			err = os.Truncate(sniNoFileName, 0)
-			checkErr(fmt.Sprintf("truncate file %s error: ", sniNoFileName), err, Error)
-			ips = getSNIIP()
 			ips = getDifference(getSNIIP(), getLastNoIP())
 		}
-		err = os.Truncate(sniResultFileName, 0)
-		checkErr(fmt.Sprintf("truncate file %s error: ", sniResultFileName), err, Error)
+
 		jobs := make(chan string, config.Concurrency)
 		done := make(chan bool, config.Concurrency)
 
@@ -366,7 +358,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 
 		go func() {
-			// defer wg.Done()
+			defer wg.Done()
 			for r := range scanResult {
 				v, _ := json.Marshal(r)
 				conn.WriteMessage(mt, v)
@@ -381,12 +373,11 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		for i := 0; i < cap(done); i++ {
 			done <- true
 		}
-		// close(scanResult)
+		close(scanResult)
 		t1 := time.Now()
 		cost := int(t1.Sub(t0).Seconds())
-		var msg = ""
 		m := math.Mod(float64(cost), 60)
-		msg += strconv.FormatFloat(m, 'f', 0, 64) + "秒"
+		msg := strconv.FormatFloat(m, 'f', 0, 64) + "秒"
 		if f1 := cost / 60; f1 > 0 {
 			m := math.Mod(float64(f1), 60)
 			msg = strconv.FormatFloat(m, 'f', 0, 64) + "分" + msg
@@ -399,12 +390,14 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-		fmt.Println(msg)
-		// wg.Wait()
+		fmt.Println("done, elapsed time: ", msg)
+		getJSONIP()
+		wg.Wait()
 		v, _ := json.Marshal(Result{true, msg})
 		conn.WriteMessage(mt, v)
 	}
 }
+
 func updateConfigHandler(w http.ResponseWriter, r *http.Request) {
 	concurrency := r.FormValue("concurrency")
 	timeout := r.FormValue("timeout")
@@ -506,17 +499,13 @@ func fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch err {
 	case nil:
 		data, err = ioutil.ReadAll(file)
-		if err != nil {
-			checkErr("read file error: ", err, Error)
-		}
+		checkErr("read file error: ", err, Error)
 		sniIPFileName = sniIPTempFileName
 		err = ioutil.WriteFile(sniIPTempFileName, data, 0755)
 		checkErr("write data to temp file error: ", err, Error)
 	case http.ErrMissingFile:
-
 		checkErr("no file uploaded error: ", errors.New(""), Warning)
 	default:
-		checkErr("upload file error: ", errors.New(""), Error)
+		checkErr("upload file error: ", err, Error)
 	}
-
 }

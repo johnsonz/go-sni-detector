@@ -28,15 +28,15 @@
             <div id="navbar" class="collapse navbar-collapse">
                 <ul class="nav navbar-nav">
                     <li class="active"><a href="#">首页</a></li>
-                    <li><a href="/tools">工具</a></li>
-                    <li><a href="/help">帮助</a></li>
+                    <li><a href="#">工具</a></li>
+                    <li><a href="#">帮助</a></li>
                 </ul>
             </div>
             <!--/.nav-collapse -->
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container container-main">
         <div style="display:inline-table;width:70%;">
             <div>
                 选择文件
@@ -45,21 +45,22 @@
             </div>
             <div>
                 <div class="alert alert-success" role="alert" id="alert-result-status" style="margin-top:5px;display:none;"></div>
+                <div class="alert alert-danger" role="alert" id="alert-error" style="margin-top:5px;display:none;"></div>
             </div>
             <div style="max-height:500px;overflow:auto;">
                 <table class="table table-bordered table-striped" id="t-ips">
                     <tr>
-                        <th></th>
+                        <th><input type='checkbox' class='cb-ip' id='cb-select-all'/></th>
                         <th>#</th>
                         <th>IP</th>
-                        <th>延迟</th>
+                        <th>延迟(ms)</th>
                         <th>主机名</th>
                     </tr>
                 </table>
             </div>
             <div style="padding-bottom: 10px;padding-right: 10px; display:inline-block">
                 <input type="button" class="btn btn-primary" value="全选" id="btn-select-all"/>
-                <input type="button" class="btn btn-primary" value="取消全选" id="btn-unselect-all"/>
+                <input type="button" class="btn btn-primary" value="全不选" id="btn-unselect-all"/>
             </div>
             <div class="btn-group">
               <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">将所选导出为
@@ -116,7 +117,12 @@
             <div class="alert alert-success" role="alert" id="alert-config" style="margin-top:5px;display:none;">更新成功！</div>
         </div>
     </div>
+    <div class="container container-tools">
 
+    </div>
+    <div class="container container-help">
+
+    </div>
     <script src="/static/js/jquery-3.2.1.min.js"></script>
     <script src="/static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
     <script src="/static/js/main.js"></script>
