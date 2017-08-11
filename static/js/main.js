@@ -5,10 +5,30 @@ $(document).ready(function() {
     var index = 1;
     var sninumber = 0;
     var totalnumber = 0;
+
     if (!isSupportWebsocket()) {
         $("#alert-error").html("浏览器不支持websocket，推荐使用Chrome、Firefox、Opera、IE 11、Safari等浏览器！").show();
     }
+
     $('[data-toggle="tooltip"]').tooltip();
+
+    $("#nav-main").click(function() {
+        $(".container-main").show();
+        $(".container-tool").hide();
+        $(".container-help").hide();
+    });
+
+    $("#nav-tool").click(function() {
+        $(".container-main").hide();
+        $(".container-tool").show();
+        $(".container-help").hide();
+    });
+
+    $("#nav-help").click(function() {
+        $(".container-main").hide();
+        $(".container-tool").hide();
+        $(".container-help").show();
+    });
 
     $("#btn-start").click(function() {
         uploadFile();
@@ -89,13 +109,54 @@ $(document).ready(function() {
         $("#alert-copy-clipboard").html("已复制到剪贴板！");
         $("#alert-copy-clipboard").show().fadeTo(5000, 1).hide("fast");
     });
+
     $("#cb-select-all").click(function() {
         $(".cb-ip").prop('checked', $(this).is(":checked"));
+    });
+
+    $("#cb-one-line").change(function() {
+        var data = $("#tt-output-data").val();
+        if ($(this).is(":checked")) {
+            data = data.replace(/,/g, ",\n");
+        } else {
+            data = data.replace(/,\n/g, ",");
+        }
+        $("#tt-output-data").val(data);
+    });
+
+    $("#tt-output-data").click(function() {
+        var data = $(this).val();
+        if (data.length > 0) {
+            copyToClipboard(data);
+            $(this).select();
+            $(".alert-copy-clipboard").html("已复制到剪贴板！").show().fadeTo(5000, 1).hide("fast");
+        }
+    });
+
+    $("#btn-convert-json").click(function() {
+        var input = $("#tt-raw-data").val();
+        var array = getMatchedIP(input);
+        if (array != null && array.length > 0) {
+            data = "\"" + array.join("\",\n\"") + "\"";
+            $("#tt-output-data").val(data);
+        } else {
+            $("#tt-output-data").val("没有检测到 IP 地址");
+        }
+    });
+    $("#btn-convert-bar").click(function() {
+        var input = $("#tt-raw-data").val();
+        var array = getMatchedIP(input);
+        if (array != null && array.length > 0) {
+            data = array.join("|");
+            $("#tt-output-data").val(data);
+        } else {
+            $("#tt-output-data").val("没有检测到 IP 地址");
+        }
     });
 });
 
 function copyToClipboard(data) {
-    var temp = $("<input>");
+    var temp = $("<textarea>");
     $("body").append(temp);
     temp.val(data).select();
     document.execCommand("copy");
@@ -202,4 +263,19 @@ function isSupportWebsocket() {
         return true;
     }
     return false;
+}
+
+function getMatchedIP(data) {
+    var matches = new Array();
+    if (data != "") {
+        regex = /([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/g;
+        var matches = data.match(regex)
+        if (matches != null) {
+            matches = matches.sort().filter(function(el, i, a) {
+                if (i == a.indexOf(el)) return 1;
+                return 0
+            })
+        }
+    }
+    return matches;
 }

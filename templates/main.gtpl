@@ -27,9 +27,9 @@
             </div>
             <div id="navbar" class="collapse navbar-collapse">
                 <ul class="nav navbar-nav">
-                    <li class="active"><a href="#">首页</a></li>
-                    <li><a href="#">工具</a></li>
-                    <li><a href="#">帮助</a></li>
+                    <li class="active"><a href="javascript:void(0);" id="nav-main">首页</a></li>
+                    <li><a href="javascript:void(0);" id="nav-tool">工具</a></li>
+                    <li><a href="javascript:void(0);" id="nav-help">帮助</a></li>
                 </ul>
             </div>
             <!--/.nav-collapse -->
@@ -117,8 +117,21 @@
             <div class="alert alert-success" role="alert" id="alert-config" style="margin-top:5px;display:none;">更新成功！</div>
         </div>
     </div>
-    <div class="container container-tools">
-
+    <div class="container container-tool">
+        <div>
+            <div class="alert alert-success alert-copy-clipboard" role="alert" style="margin-top:5px;display:none;"></div>
+        </div>
+        <div>
+            <textarea class="" rows="8" style="width:48%;" id="tt-raw-data" placeholder="请把包含 IP 地址的文本粘贴到此处"></textarea>
+            <textarea class="" rows="8" style="width:48%;float:right;" id="tt-output-data" placeholder="格式化后的 IP 地址将显示在此" readonly="readonly"></textarea>
+        </div>
+        <div style="text-align:right;">
+            <input type="checkbox" checked="checked" id="cb-one-line" style="">每个IP占一行</input>
+        </div>
+        <div style="text-align:center;">
+            <input type="button" style="" class="btn btn-primary" id="btn-convert-json" value="转换为JSON格式"></input>
+            <input type="button" style="" class="btn btn-primary" id="btn-convert-bar" value="转换为为竖线分隔格式"></input>
+        </div>
     </div>
     <div class="container container-help">
 

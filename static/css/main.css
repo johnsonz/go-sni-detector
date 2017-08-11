@@ -4,6 +4,6 @@
 #t-ips tr td, #t-ips tr th{
     text-align: center;
 }
-.container-tools,.container-help{
+.container-tool,.container-help{
     display: none;
 }
