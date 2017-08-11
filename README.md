@@ -50,6 +50,9 @@ SUPPORT VARS:
 
 `"soft_mode"` 边读取ip边扫描，适合需要扫描大量ip且内存较小的用户
 
+## Windows 平台
+针对Windows平台出了浏览器模式，目前功能正在完善中。
+
 ## Wiki
 [Wiki](https://plumwine.me/go-sni-detector-usage-wiki/)
 
