@@ -78,6 +78,14 @@ $(document).ready(function() {
         $(".cb-ip").prop('checked', false);
     });
 
+    $("#btn-select-delay").click(function() {
+        $('#t-ips tr').each(function() {
+            if (parseInt($(this).find(".td-ip-delay").html(), 10) <= parseInt($("#delay").val(), 10)) {
+                $(this).find(".cb-ip").prop('checked', true);
+            }
+        });
+    });
+
     $("#btn-export-json").click(function() {
         var data = "";
         $('#t-ips tr').filter(':has(:checkbox:checked)').each(function() {
@@ -143,6 +151,7 @@ $(document).ready(function() {
             $("#tt-output-data").val("没有检测到 IP 地址");
         }
     });
+
     $("#btn-convert-bar").click(function() {
         var input = $("#tt-raw-data").val();
         var array = getMatchedIP(input);

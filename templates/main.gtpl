@@ -61,6 +61,7 @@
             <div style="padding-bottom: 10px;padding-right: 10px; display:inline-block">
                 <input type="button" class="btn btn-primary" value="全选" id="btn-select-all"/>
                 <input type="button" class="btn btn-primary" value="全不选" id="btn-unselect-all"/>
+                <input type="button" class="btn btn-primary" value="全选延迟小于{{.Delay}}的" id="btn-select-delay"/>
             </div>
             <div class="btn-group">
               <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">将所选导出为
