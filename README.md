@@ -51,7 +51,7 @@ SUPPORT VARS:
 `"soft_mode"` 边读取ip边扫描，适合需要扫描大量ip且内存较小的用户
 
 ## Windows 平台
-针对Windows平台出了浏览器模式，目前功能正在完善中。
+针对Windows平台出了浏览器模式，目前功能正在完善中。项目使用了websocket，参见[Web Sockets浏览器兼容一览表](http://caniuse.mojijs.com/Home/Html/item/key/websockets/index.html)判断浏览器是否兼容websocket。
 
 ## Wiki
 [Wiki](https://plumwine.me/go-sni-detector-usage-wiki/)
