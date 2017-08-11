@@ -5,7 +5,9 @@ $(document).ready(function() {
     var index = 1;
     var sninumber = 0;
     var totalnumber = 0;
-
+    if (!isSupportWebsocket()) {
+        $("#alert-error").html("浏览器不支持websocket，推荐使用Chrome、Firefox、Opera、IE 11、Safari等浏览器！").show();
+    }
     $('[data-toggle="tooltip"]').tooltip();
 
     $("#btn-start").click(function() {
@@ -193,4 +195,11 @@ function Result(addr, delay, hostname) {
     this.addr = addr;
     this.delay = delay;
     this.hostname = hostname;
+}
+
+function isSupportWebsocket() {
+    if (typeof WebSocket != 'undefined') {
+        return true;
+    }
+    return false;
 }
