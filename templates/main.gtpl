@@ -135,15 +135,34 @@
         </div>
     </div>
     <div class="container container-help">
-
-        <ul>
-            <li>
-                请选择包含ip段的文件，如果未选择，则使用内置的文件进行扫描。
-            </li>
-            <li>
-
-            </li>
-        </ul>
+        <h1>go-sni-detector windows版本<h1>
+            <p>
+            <a href="https://travis-ci.org/johnsonz/go-sni-detector" target="_blank"><img alt="Build Status" src="https://travis-ci.org/johnsonz/go-sni-detector.svg?branch=master"/></a>
+            <a href="https://github.com/johnsonz/go-sni-detector/blob/master/LICENSE" target="_blank"><img alt="GPLv3 License" src="https://img.shields.io/badge/license-GPLv3-blue.svg"/></a>
+            </p>
+        <h2>说明</h2>
+        <p>
+            go-sni-detector windows浏览器版本，用于扫描SNI服务器，扫描出的延迟值为配置中指定的各Server Name的延迟的平均值。
+        </p>
+        <p>
+            项目使用了websocket，请参见<a href="http://caniuse.mojijs.com/Home/Html/item/key/websockets/index.html" target="_blank">Web Sockets浏览器兼容一览表</a>自行判断浏览器是否支持websocket。
+        </p>
+        <h2>使用方法</h2>
+        <p>
+            请先选择包含ip段的文件，如果未指定，则使用内置的ip段。
+        </p>
+        <h2>下载地址</h2>
+        <p>
+            <a href="https://github.com/johnsonz/go-sni-detector/releases" target="_blank">Latest release</a>
+        </p>
+        <h2>其它工具</h2>
+        <p>
+            扫描google ip工具：<a href="https://github.com/johnsonz/go-checkiptools" target="_blank">go-checkiptools</a>
+        </p>
+        <h2>问题</h2>
+        <p>
+            项目还在完善中，可能会有些小问题，欢迎到<a href="https://github.com/johnsonz/go-sni-detector" target="_blank">go-sni-detector</a>提issue。
+        </p>
     </div>
     <script src="/static/js/jquery-3.2.1.min.js"></script>
     <script src="/static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
