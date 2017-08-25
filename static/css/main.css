@@ -1,9 +1,67 @@
 .navbar-static-top {
-  margin-bottom: 19px;
+    margin-bottom: 19px;
 }
-#t-ips tr td, #t-ips tr th{
+
+#t-ips tr td, #t-ips tr th {
     text-align: center;
 }
-.container-tool,.container-help{
+
+.container-tool, .container-help {
     display: none;
+}
+
+.container-file {
+    display: inline-table;
+    width: 70%;
+}
+
+.container-file #file {
+    display: inline;
+}
+
+.alert {
+    margin-top: 5px;
+    display: none;
+}
+
+.container-table {
+    max-height: 500px;
+    overflow: auto;
+}
+
+.container-btn {
+    padding-bottom: 10px;
+    padding-right: 10px;
+    display: inline-block
+}
+
+div.form-inline {
+    display: inline-table;
+    width: 25%
+}
+
+#btn-config-update {
+    margin-top: 10px;
+}
+
+#btn-config-reset {
+    margin-left: 20px;
+    margin-top: 10px;
+}
+
+#tt-raw-data {
+    width: 48%;
+}
+
+#tt-output-data {
+    width: 48%;
+    float: right;
+}
+
+.container-o {
+    text-align: right;
+}
+
+.container-c {
+    text-align: center;
 }
