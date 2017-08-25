@@ -59,9 +59,13 @@ div.form-inline {
 }
 
 .container-o {
-    text-align: right;
+    text-align: none;
 }
 
 .container-c {
     text-align: center;
+}
+
+.s-oneline {
+    float: right;
 }

@@ -123,11 +123,17 @@
             <div class="alert alert-success alert-copy-clipboard" role="alert"></div>
         </div>
         <div>
-            <textarea class="" rows="8" id="tt-raw-data" placeholder="请把包含 IP 地址的文本粘贴到此处"></textarea>
-            <textarea class="" rows="8" id="tt-output-data" placeholder="格式化后的 IP 地址将显示在此" readonly="readonly"></textarea>
+            <textarea class="" rows="8" id="tt-raw-data" spellcheck="false" placeholder="请把包含 IP 地址的文本粘贴到此处"></textarea>
+            <textarea class="" rows="8" id="tt-output-data" spellcheck="false" placeholder="格式化后的 IP 地址将显示在此" readonly="readonly"></textarea>
         </div>
         <div class="container-o">
-            <input type="checkbox" checked="checked" id="cb-one-line" style="">每个IP占一行</input>
+            <span>
+                <input type="radio" name="ipfamily" id="rd-ipv4" value="v4" checked="checked">IPv4</input>
+                <input style="" type="radio" name="ipfamily" id="rd-ipv6" value="v6">IPv6</input>
+            </span>
+            <span class="s-oneline">
+                <input type="checkbox" checked="checked" id="cb-one-line">每个IP占一行</input>
+            </span>
         </div>
         <div class="container-c">
             <input type="button" class="btn btn-primary" id="btn-convert-json" value="转换为JSON格式"></input>

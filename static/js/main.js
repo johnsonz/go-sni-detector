@@ -150,7 +150,8 @@ $(document).ready(function() {
 
     $("#btn-convert-json").click(function() {
         var input = $("#tt-raw-data").val();
-        var array = getMatchedIP(input);
+        var ipv6 = $("#rd-ipv6").is(":checked");
+        var array = getMatchedIP(input, ipv6);
         if (array != null && array.length > 0) {
             data = "\"" + array.join("\",\n\"") + "\"";
             $("#tt-output-data").val(data);
@@ -161,7 +162,8 @@ $(document).ready(function() {
 
     $("#btn-convert-bar").click(function() {
         var input = $("#tt-raw-data").val();
-        var array = getMatchedIP(input);
+        var ipv6 = $("#rd-ipv6").is(":checked");
+        var array = getMatchedIP(input, ipv6);
         if (array != null && array.length > 0) {
             data = array.join("|");
             $("#tt-output-data").val(data);
@@ -281,10 +283,13 @@ function isSupportWebsocket() {
     return false;
 }
 
-function getMatchedIP(data) {
+function getMatchedIP(data, ipv6) {
     var matches = new Array();
     if (data != "") {
         regex = /([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/g;
+        if (ipv6) {
+            regex = /((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))/g
+        }
         var matches = data.match(regex)
         if (matches != null) {
             matches = matches.sort().filter(function(el, i, a) {
