@@ -30,6 +30,11 @@ $(document).ready(function() {
         $(".container-help").show();
     });
 
+    $('.navbar-nav li').click(function(e) {
+        e.preventDefault();
+        $(this).addClass('active').siblings().removeClass('active');
+    });
+
     $("#btn-start").click(function() {
         uploadFile();
     });
